@@ -51,7 +51,97 @@ Certificates exposed in the router pods to sign communications against the expos
 Used to expose API to the customer, it is usually signed by the Corporate CA.
 
 
+#### Check Certificate Expiration
+
 We can use openshift-ansible to check future expiration of certificates, running following playbook:
+
+```bash
+$ ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/openshift-checks/certificate_expiry/easy-mode.yaml -e openshift_certificate_expiry_html_report_path=/tmp/cert-expiry-report.html -e openshift_certificate_expiry_json_results_path=/tmp/cert-expiry-report.json -e openshift_is_atomic=false -e ansible_distribution=RedHat
+```
+
+This playbook will generate a html report and a json file with information about expiration.
+
+
+#### Redeploying Master Certificates Only
+
+```bash
+ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/openshift-master/redeploy-certificates.yml
+```
+
+
+#### Redeploying etcd Certificates Only
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/openshift-etcd/redeploy-certificates.yml
+```
+
+#### Redeploying Node Certificates 
+
+OpenShift Container Platform automatically rotates node certificates when they get close to expiring
+
+
+#### Router Custom Certificate Renew
+
+For this case manual redeploy is prefered.
+
+
+```bash
+$ cat router-custom.crt ca.crt router-custom.key > router-custom.pem
+$ oc login -u admin
+$ oc project default
+$ oc export secret router-custom-certs > ~/old-router-custom-certs-secret.yaml
+$ oc create secret tls router-custom-certs --cert=router-custom.pem --key=router-custom.key -o json --dry-run | oc replace -f -
+$ oc annotate service router-custom service.alpha.openshift.io/serving-cert-secret-name- service.alpha.openshift.io/serving-cert-signed-by-
+$ oc annotate service router-custom service.alpha.openshift.io/serving-cert-secret-name=router-custom-certs
+$ oc rollout latest dc/router-custom
+
+```
+
+
+#### Certificate HealthCheck
+
+The following procedure can be executed in order to verify redeploy certificate healthcheck.
+
+
+* Openshift Cluster certificates health,
+
+```bash
+$ oc get pods --all-namespaces
+$ oc get nodes
+
+master# source /etc/etcd/etcd.conf
+master# etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS cluster-health
+master# etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS member list
+```
+
+* Router and Registry certificates health,
+
+```bash
+$ oc -n default get deploymentconfigs/router-custom
+$ oc -n default get deploymentconfigs/docker-registry
+$ oc -n default get deploymentconfigs/registry-console
+$ curl -kv https://docker-registry-default.apps.info.net/healthz
+$ firefox https://registry-console-default.apps.info.net
+```
+
+* External Registry Access
+
+```bash
+$ oc whoami -t
+$ sudo docker login -p TOKEN -e unused -u unused https://docker-registry-default.apps.info.net
+$ sudo docker pull https://docker-registry-default.apps.info.net/httpd-test/ruby-22-centos7:latest
+$ sudo docker images
+$ sudo docker tag e42d0dccf073 https://docker-registry-default.apps.info.net/httpd-test/ruby-22-centos7:test
+$ sudo docker push https://docker-registry-default.apps.info.net/httpd-test/ruby-22-centos7:test
+```
+
+* Check certificate renew
+
+```bash
+$ ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/certificate_expiry/easy-mode.yaml -e openshift_certificate_expiry_html_report_path=/tmp/cert-expiry-report.html -e openshift_certificate_expiry_json_results_path=/tmp/cert-expiry-report.json -e openshift_is_atomic=false -e ansible_distribution=RedHat
+```
 
 
 
