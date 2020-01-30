@@ -12,6 +12,11 @@ Day 2 Operations for Openshift 3
 https://docs.openshift.com/container-platform/3.11/welcome/index.html   
 
 
+## Openshift 3 Architecture
+
+
+
+
 ## Openshift 3 Upgrade
 
 ### Official Documentation
@@ -25,10 +30,187 @@ https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-
 ### Official Documentation
 
 https://docs.openshift.com/container-platform/3.11/day_two_guide/environment_health_checks.html
+https://docs.openshift.com/container-platform/3.11/admin_guide/diagnostics_tool.html
+https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html-single/day_two_operations_guide/#day-two-guide-network-connectivity
+
+### Ansible-based Health Checks
+
+Health checks are available through the Ansible-based tooling used to install and manage OpenShift Container Platform clusters. They can report common deployment problems for the current OpenShift Container Platform installation.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts -e openshift_disable_check=curator,elasticsearch,logging_index_time,diagnostics playbooks/openshift-checks/health.yml
+```
+
+### Checking complete environment health - Deploy test app
+
+```bash
+$ oc new-project httpd-test
+$ oc new-app --image-stream=httpd-24-rhel7
+$ oc expose service httpd-24-rhel7
+$ oc create route edge httpd-24-rhel7-ssl --service=httpd-24-rhel7 --hostname=httpd-24-rhel7-ssl-httpd-test.apps.info.net
+$ oc get pods
+$ oc get svc
+$ oc get route
+
+$ curl httpd-24-rhel7-httpd-test.apps.info.net
+$ curl -k httpd-24-rhel7-httpd-test.apps.info.net
+$ firefox httpd-24-rhel7-httpd-test.apps.info.net
+
+$ oc delete project httpd-test
+```
+
+### Host health
+
+```bash
+master$ oc get nodes
+master$ oc get pod --all-namespaces -o wide
+
+master$ source /etc/etcd/etcd.conf
+master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS cluster-health
+master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS member list
+```
+
+
+### Router and registry health
+
+```bash
+$ oc -n default get deploymentconfigs/router
+NAME      REVISION   DESIRED   CURRENT   TRIGGERED BY
+router    1          3         3         config
+
+
+$ oc -n default get deploymentconfigs/docker-registry
+NAME              REVISION   DESIRED   CURRENT   TRIGGERED BY
+docker-registry   1          3         3         config
+
+* The values in the DESIRED and CURRENT columns should match the number of nodes hosts *
+```
+
+### Network connectivity
+
+#### Connectivity on master hosts
+
+Master services keep their state synchronized using the etcd key-value store. This communication happens on TCP ports 2379 and 2380.
+
+
+```bash
+# oc get nodes
+...
+```
+(Ready status means that master hosts can communicate with node hosts and that the nodes are ready to run pods (excluding the nodes in which scheduling is disabled))
+
+
+#### SkyDNS
+
+SkyDNS provides name resolution of local services running in OpenShift Container Platform. This service uses TCP and UDP port 8053.
+
+```bash
+# dig +short docker-registry.default.svc.cluster.local
+172.30.150.7
+
+# oc get svc/docker-registry -n default
+NAME              CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
+docker-registry   172.30.150.7   <none>        5000/TCP   3d
+```
+
+*172.30.150.7 equivalent IP match*
+
+
+#### API service and web console
+
+Both the API service and web console share the same port, usually TCP 8443 or 443, depending on the setup. This port needs to be available within the cluster and to everyone who needs to work with the deployed environment.
+
+
+```bash
+$ curl -k https://loadbalancer.2e5b.example.opentlc.com:443/version
+{
+  "major": "1",
+  "minor": "6",
+  "gitVersion": "v1.6.1+5115d708d7",
+  "gitCommit": "fff65cf",
+  "gitTreeState": "clean",
+  "buildDate": "2017-10-11T22:44:25Z",
+  "goVersion": "go1.7.6",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+$ curl -k https://loadbalancer.2e5b.example.opentlc.com:443/healthz
+ok
+```
+
+#### Connectivity on node instances
+
+The SDN connecting pod communication on nodes uses UDP port 4789 by default. To verify node host functionality, create a new application:
+
+```bash
+$ oc new-project sdn-test
+$ oc new-app httpd~https://github.com/sclorg/httpd-ex
+$ oc get pods
+
+$ oc rsh po/<pod-name>
+$ curl -kv https://docker-registry.default.svc.cluster.local:5000/healthz
+* About to connect() to docker-registry.default.svc.cluster.locl port 5000 (#0)
+*   Trying 172.30.150.7...
+* Connected to docker-registry.default.svc.cluster.local (172.30.150.7) port 5000 (#0)
+* Initializing NSS with certpath: sql:/etc/pki/nssdb
+* skipping SSL peer certificate verification
+* SSL connection using TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+* Server certificate:
+*       subject: CN=172.30.150.7
+*       start date: Nov 30 17:21:51 2017 GMT
+*       expire date: Nov 30 17:21:52 2019 GMT
+*       common name: 172.30.150.7
+*       issuer: CN=openshift-signer@1512059618
+> GET /healthz HTTP/1.1
+> User-Agent: curl/7.29.0
+> Host: docker-registry.default.svc.cluster.local:5000
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< Cache-Control: no-cache
+< Date: Mon, 04 Dec 2017 16:26:49 GMT
+< Content-Length: 0
+< Content-Type: text/plain; charset=utf-8
+<
+* Connection #0 to host docker-registry.default.svc.cluster.local left intact
+
+sh-4.2$ *exit*
+
+```
+*The HTTP/1.1 200 OK response means the node is correctly connecting.*
+
+```bash
+$ oc delete project sdn-test
+project "sdn-test" deleted
+```
+
+To verify the wilcard DNS
+
+```bash
+$ dig *.apps.2e5b.example.opentlc.com
+```
+
+To verify the functionality of the routers, check the registry service once more, but this time from outside the cluster:
+
+```bash
+$ curl -kv https://docker-registry-default.apps.example.com/healthz
+*   Trying 35.xx.xx.92...
+* TCP_NODELAY set
+* Connected to docker-registry-default.apps.example.com (35.xx.xx.92) port 443 (#0)
+...
+< HTTP/2 200
+```
+
+### Storage
+
+Master instances need at least 40 GB of hard disk space for the /var directory. Check the disk usage of a master host using the df command:
 
 
 
-##
+
 ## Openshift 3 Certificates
 
 ### Official Documentation
