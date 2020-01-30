@@ -31,7 +31,7 @@ https://docs.openshift.com/container-platform/3.11/day_two_guide/environment_hea
 
 
 
-
+<br />
 ## Openshift 3 Certificates
 
 ### Official Documentation
@@ -151,7 +151,7 @@ $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts /usr/shar
 
 
 
-
+<br />
 ## Openshift 3 Users and Roles 
 
 ### Official Documentation
