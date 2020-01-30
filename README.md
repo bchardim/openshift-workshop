@@ -187,13 +187,8 @@ $ oc delete project sdn-test
 project "sdn-test" deleted
 ```
 
-To verify the wilcard DNS
-
-```bash
-$ dig *.apps.2e5b.example.opentlc.com
-```
-
 To verify the functionality of the routers, check the registry service once more, but this time from outside the cluster:
+(Check external access to SDN )
 
 ```bash
 $ curl -kv https://docker-registry-default.apps.example.com/healthz
@@ -203,6 +198,21 @@ $ curl -kv https://docker-registry-default.apps.example.com/healthz
 ...
 < HTTP/2 200
 ```
+
+### DNS
+
+Verify wilcard DNS points to LB
+
+```bash
+$ dig *.apps.2e5b.example.opentlc.com
+```
+
+Verify all nodes have direct and inverse resolution
+
+```bash
+$ ansible -i hosts all -m shell -a 'host $(hostname); host $(ip a | grep "inet 10." | awk  "{print \$2}" | cut -d/ -f1)' -u quicklab -b
+```
+
 
 ### Storage
 
@@ -516,6 +526,15 @@ Without enough entropy, the kernel is not able to generate these random numbers 
 
 ```bash
 $ ansible -i hosts -m shell -a 'cat /proc/sys/kernel/random/entropy_avail' -u quicklab -b
+```
+
+### OpenShift Version and Packages match
+
+Check the list of OCP installed packages and their version. Check OCP version.
+
+```bash
+$ ansible -i hosts --limit nodes  -m shell -a "yum list installed | grep openshift" -u quicklab -b
+$ ansible -i hosts --limit nodes  -m shell -a "/usr/bin/openshift version" -u quicklab -b
 ```
 
 
