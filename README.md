@@ -14,6 +14,10 @@ https://docs.openshift.com/container-platform/3.11/welcome/index.html
 
 ## Openshift 3 Upgrade
 
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-config-upgrading-strategy-inplace
+
 ## Openshift 3 HealthCheck
 
 ## Openshift 3 Certificates
