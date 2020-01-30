@@ -14,7 +14,9 @@ https://docs.openshift.com/container-platform/3.11/welcome/index.html
 
 ## Openshift 3 Architecture
 
+The following workshop applies for a test Openshift 3.11 cluster using OCS 3.11 with gluster in independent mode.
 
+![alt text]( images/arch-independent.png "Architecture")  
 
 
 ## Openshift 3 Upgrade
