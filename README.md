@@ -29,9 +29,8 @@ https://docs.openshift.com/container-platform/3.11/day_two_guide/environment_hea
 
 
 
-
-
 <p>
+
 ## Openshift 3 Certificates
 
 ### Official Documentation
