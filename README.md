@@ -25,6 +25,8 @@ The following workshop applies for a test Openshift 3.11 cluster using OCS 3.11 
 
 https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-config-upgrading-strategy-inplace
 
+* Make sure that you have a full backup of the cluster before upgrading it.
+
 * Update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
 
 ```bash
