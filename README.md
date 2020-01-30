@@ -25,6 +25,65 @@ The following workshop applies for a test Openshift 3.11 cluster using OCS 3.11 
 
 https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-config-upgrading-strategy-inplace
 
+* Update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
+
+```bash
+$ yum update -y openshift-ansible
+$ rpm -q openshift-ansible
+Openshift-ansible-3.11.x
+```
+
+* Modify cluster inventory in order to reflect the new package and image versions.
+
+```bash
+$ cat hosts
+openshift_pkg_version="-3.11.82"
+openshift_image_tag="v3.11.82"
+...
+openshift_metrics_image_version=v3.11.82
+openshift_logging_image_version=v3.11.82
+openshift_service_catalog_image_version=v3.11.82
+...
+openshift_web_console_version="v3.11.82"
+openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.82
+```
+Change 3.11.82 to 3.11.117 for example
+
+* From bastion node, upgrade the control plane
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
+```
+
+* From bastion node, upgrade infra nodes
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
+```
+
+* From bastion node, upgrade worker nodes
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
+```
+
+
+* Quick upgrade verify
+
+```bash
+$ oc get nodes
+$ oc get pods -n kube-system
+$ oc get pods --all-namespaces
+$ oc get pvc --all-namespaces
+$ oc get pv
+$ oc get -n default dc/docker-registry -o json | grep \"image\"
+    "image": "openshift3/ose-docker-registry:v3.11.117",
+$ oc get -n default dc/router -o json | grep \"image\"
+    "image": "openshift3/ose-haproxy-router:v3.11.117",
+```
+
+* Run Openshift 3 HealthCheck procedure (next section)
+
 
 
 ## Openshift 3 HealthCheck
