@@ -206,6 +206,73 @@ $ curl -kv https://docker-registry-default.apps.example.com/healthz
 
 ### Storage
 
+### Nodes free space
+
+Master instances need at least 40 GB of hard disk space for the /var directory. Check the disk usage of a master host using the df command:
+
+```bash
+ansible -i hosts -m shell -a "df -hT"
+```
+
+### Check Heketi OCS status
+
+Run the following script in one master and revise the result:
+
+```bash
+master$ cat heketi-ocs-status.sh 
+#!/bin/bash
+
+STORAGE_PROJECT=$1
+
+subscription-manager repos --enable="rh-gluster-3-client-for-rhel-7-server-rpms"
+yum -y install heketi-client
+subscription-manager repos --disable="rh-gluster-3-client-for-rhel-7-server-rpms"
+
+oc project ${STORAGE_PROJECT}
+export HEKETI_POD=$(oc get pods -l glusterfs=heketi-storage-pod -n ${STORAGE_PROJECT} -o jsonpath="{.items[0].metadata.name}")
+export HEKETI_CLI_USER=admin
+export HEKETI_CLI_KEY=$(oc get pod/$HEKETI_POD -n ${STORAGE_PROJECT} -o jsonpath='{.spec.containers[0].env[?(@.name=="HEKETI_ADMIN_KEY")].value}')
+export HEKETI_ADMIN_KEY_SECRET=$( echo -n ${HEKETI_CLI_KEY} | base64 )
+export HEKETI_CLI_SERVER=http://heketi-storage.${STORAGE_PROJECT}.svc:8080
+curl -w '\n' ${HEKETI_CLI_SERVER}/hello
+sleep 5
+
+heketi-cli topology info
+sleep 5
+
+heketi-cli cluster list
+heketi-cli node list
+heketi-cli volume list
+sleep 5
+
+heketi-cli db check
+sleep 5
+
+heketi-cli server state examine gluster
+sleep 5
+
+master$ heketi-ocs-status.sh glusterfs 
+...
+``` 
+
+#### Checking the default storage class
+
+For proper functionality of dynamically provisioned persistent storage, the default storage class needs to be defined.
+
+```bash
+# oc get storageclass
+
+# oc get sc
+NAME                          PROVISIONER                AGE
+glusterfs-storage (default)   kubernetes.io/glusterfs    1d
+glusterfs-storage-block       gluster.org/glusterblock   1d
+```
+
+At least on storage class must be configured as default
+
+
+### Checking PVC and PV
+
 Check all PVC are bounded to a PV
 
 ```bash
@@ -213,10 +280,55 @@ $ oc get pv
 $ oc get pvc --all-namespaces
 ```
 
-Master instances need at least 40 GB of hard disk space for the /var directory. Check the disk usage of a master host using the df command:
+
+### Check PVC and use it on APP
 
 ```bash
-ansible -i hosts -m shell -a "df -hT"
+$ oc new-project testme
+
+$ cat pvc.yml
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+ name: claim1
+ annotations:
+   volume.beta.kubernetes.io/storage-class: glusterfs-storage
+spec:
+ accessModes:
+   - ReadWriteOnce
+ resources:
+   requests:
+     storage: 1Gi
+
+$ oc create -f pvc.yml
+$ oc get pvc -> BOUND
+
+$ cat app.yml
+apiVersion: v1
+kind: Pod
+metadata:
+ name: busybox
+spec:
+ containers:
+   - image: busybox
+     command:
+       - sleep
+       - "3600"
+     name: busybox
+     volumeMounts:
+       - mountPath: /usr/share/busybox
+         name: mypvc
+ volumes:
+   - name: mypvc
+     persistentVolumeClaim:
+       claimName: claim1
+
+
+$ oc create -f app.yml
+$ oc describe pod busybox  -> Observe Mount
+$ oc get pvc
+$ oc get pv
+$ oc get events
 ```
 
 ### Docker storage
@@ -237,7 +349,173 @@ Storage Driver: overlay2
 ...
 ```
 
-###
+### API service status
+
+The OpenShift API service runs on all master instances. To see the status of the service, view the master-api pods in the kube-system project:
+
+```bash
+$ oc get pod -n kube-system -l openshift.io/component=api
+NAME                             READY     STATUS    RESTARTS   AGE
+master-api-myserver.com          1/1       Running   0          56d
+```
+
+The API service exposes a health check, which can be queried externally using the API host name:
+
+```bash
+$ oc get pod -n kube-system -o wide
+NAME                                               READY     STATUS    RESTARTS   AGE       IP            NODE
+master-api-myserver.com                            1/1       Running   0          7h        10.240.0.16   myserver.com/healthz
+
+$ curl -k https://myserver.com/healthz
+ok
+```
+
+### Controller role verification
+
+The OpenShift Container Platform controller service, is available across all master hosts. The service runs in active/passive mode, meaning it should only be running on one master at any time.
+  Verify the master host running the controller service as a cluster-admin user:
+
+
+```bash
+$ oc get -n kube-system cm openshift-master-controllers -o yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    control-plane.alpha.kubernetes.io/leader: '{"holderIdentity":"master-ose-master-0.example.com-10.19.115.212-dnwrtcl4","leaseDurationSeconds":15,"acquireTime":"2018-02-17T18:16:54Z","renewTime":"2018-02-19T13:50:33Z","leaderTransitions":16}'
+  creationTimestamp: 2018-02-02T10:30:04Z
+  name: openshift-master-controllers
+  namespace: kube-system
+  resourceVersion: "17349662"
+  selfLink: /api/v1/namespaces/kube-system/configmaps/openshift-master-controllers
+  uid: 08636843-0804-11e8-8580-fa163eb934f0
+```
+
+The command outputs the current master controller in the control-plane.alpha.kubernetes.io/leader annotation, within the holderIdentity property as:
+
+master-<hostname>-<ip>-<8_random_characters>
+
+
+Find the hostname of the master host by filtering the output using the following:
+
+```bash
+$ oc get -n kube-system cm openshift-master-controllers -o json | jq -r '.metadata.annotations[] | fromjson.holderIdentity | match("^master-(.*)-[0-9.]*-[0-9a-z]{8}$") | .captures[0].string'
+```
+
+### Verifying correct Maximum Transmission Unit (MTU) size
+
+Verifying the maximum transmission unit (MTU) prevents a possible networking misconfiguration that can masquerade as an SSL certificate issue.
+
+When a packet is larger than the MTU size that is transmitted over HTTP, the physical network router is able to break the packet into multiple packets to transmit the data.
+However, when a packet is larger than the MTU size is that transmitted over HTTPS, the router is forced to drop the packet.
+
+Installation produces certificates that provide secure connections to multiple components that include:
+
+* master hosts
+* node hosts
+* infrastructure nodes
+* registry
+* router
+
+These certificates can be found within the /etc/origin/master directory for the master nodes and /etc/origin/node directory for the infra and app nodes.
+
+```bash
+# oc -n default get dc docker-registry -o jsonpath='{.spec.template.spec.containers[].env[?(@.name=="REGISTRY_OPENSHIFT_SERVER_ADDR")].value}{"\n"}'
+docker-registry.default.svc:5000
+
+# curl -kv https://docker-registry.default.svc:5000/healthz
+* About to connect() to docker-registry.default.svc port 5000 (#0)
+*   Trying 172.30.11.171...
+* Connected to docker-registry.default.svc (172.30.11.171) port 5000 (#0)
+* Initializing NSS with certpath: sql:/etc/pki/nssdb
+*   CAfile: /etc/pki/tls/certs/ca-bundle.crt
+  CApath: none
+* SSL connection using TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+* Server certificate:
+*       subject: CN=172.30.11.171
+*       start date: Oct 18 05:30:10 2017 GMT
+*       expire date: Oct 18 05:30:11 2019 GMT
+*       common name: 172.30.11.171
+*       issuer: CN=openshift-signer@1508303629
+> GET /healthz HTTP/1.1
+> User-Agent: curl/7.29.0
+> Host: docker-registry.default.svc:5000
+> Accept: */*
+>
+< HTTP/1.1 200 OK        <----
+< Cache-Control: no-cache
+< Date: Tue, 24 Oct 2017 19:42:35 GMT
+< Content-Length: 0
+< Content-Type: text/plain; charset=utf-8
+<
+* Connection #0 to host docker-registry.default.svc left intact
+```
+
+The above example output shows the MTU size being used to ensure the SSL connection is correct. The attempt to connect is successful, followed by connectivity being established and completes with initializing the NSS with the certpath and all the server certificate information regarding the docker-registry.
+
+
+An improper MTU size results in a timeout:
+
+```bash
+$ curl -v https://docker-registry.default.svc:5000/healthz
+* About to connect() to docker-registry.default.svc port 5000 (#0)
+*   Trying 172.30.11.171...
+* Connected to docker-registry.default.svc (172.30.11.171) port 5000 (#0)
+* Initializing NSS with certpath: sql:/etc/pki/nssdb
+...
+...
+```
+
+(See https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html-single/day_two_operations_guide/#day_two_environment_health_checks to fix the issue)
+
+View the MTU size of the desired Ethernet device (i.e. eth0):
+
+```bash
+# ip link show eth0
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
+    link/ether fa:16:3e:92:6a:86 brd ff:ff:ff:ff:ff:ff
+```
+
+To change the MTU size, modify the appropriate node configuration map and set a value that is 50 bytes smaller than output provided by the ip command.
+
+$ oc get cm -n openshift-node
+NAME                       DATA      AGE
+node-config-all-in-one     1         1d
+node-config-compute        1         1d
+node-config-infra          1         1d
+node-config-master         1         1d
+node-config-master-infra   1         1d
+
+$ oc get cm node-config-compute -o yaml
+...
+...
+networkConfig:
+   mtu: 1450
+...
+...
+```
+
+Save the changes and reboot the node
+
+
+### NTP synchronization
+
+Check if all nodes have NTP activated and sync
+
+```bash
+$ ansible -i hosts -m shell -a 'timedatectl | grep NTP' -u quicklab -b
+```
+
+
+### System Entropy
+
+OpenShift Container Platform uses entropy to generate random numbers for objects such as IDs or SSL traffic. These operations wait until there is enough entropy to complete the task.
+Without enough entropy, the kernel is not able to generate these random numbers with sufficient speed, which can lead to timeouts and the refusal of secure connections.
+
+
+```bash
+$ ansible -i hosts -m shell -a 'cat /proc/sys/kernel/random/entropy_avail' -u quicklab -b
+```
 
 
 
