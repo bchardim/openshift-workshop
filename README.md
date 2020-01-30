@@ -28,6 +28,10 @@ https://docs.openshift.com/container-platform/3.11/day_two_guide/environment_hea
 
 
 
+
+
+
+
 ## Openshift 3 Certificates
 
 ### Official Documentation
@@ -142,6 +146,9 @@ $ sudo docker push https://docker-registry-default.apps.info.net/httpd-test/ruby
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/certificate_expiry/easy-mode.yaml -e openshift_certificate_expiry_html_report_path=/tmp/cert-expiry-report.html -e openshift_certificate_expiry_json_results_path=/tmp/cert-expiry-report.json -e openshift_is_atomic=false -e ansible_distribution=RedHat
 ```
+
+
+
 
 
 
