@@ -216,7 +216,7 @@ ansible -i hosts -m shell -a "df -hT"
 
 ### Check Heketi OCS status
 
-Run the following script in one master and revise the result:
+Run the following script in one master and review the result:
 
 ```bash
 master$ cat heketi-ocs-status.sh 
@@ -273,7 +273,7 @@ At least on storage class must be configured as default
 
 ### Checking PVC and PV
 
-Check all PVC are bounded to a PV
+Check all PVC are bond to a PV
 
 ```bash
 $ oc get pv
@@ -471,13 +471,14 @@ $ curl -v https://docker-registry.default.svc:5000/healthz
 View the MTU size of the desired Ethernet device (i.e. eth0):
 
 ```bash
-# ip link show eth0
+$ ip link show eth0
 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
     link/ether fa:16:3e:92:6a:86 brd ff:ff:ff:ff:ff:ff
 ```
 
 To change the MTU size, modify the appropriate node configuration map and set a value that is 50 bytes smaller than output provided by the ip command.
 
+```bash
 $ oc get cm -n openshift-node
 NAME                       DATA      AGE
 node-config-all-in-one     1         1d
