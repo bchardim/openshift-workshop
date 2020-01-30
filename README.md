@@ -206,7 +206,39 @@ $ curl -kv https://docker-registry-default.apps.example.com/healthz
 
 ### Storage
 
+Check all PVC are bounded to a PV
+
+```bash
+$ oc get pv
+$ oc get pvc --all-namespaces
+```
+
 Master instances need at least 40 GB of hard disk space for the /var directory. Check the disk usage of a master host using the df command:
+
+```bash
+ansible -i hosts -m shell -a "df -hT"
+```
+
+### Docker storage
+
+The Docker storage disk is mounted as /var/lib/docker and formatted with xfs file system. Docker storage is configured to use overlay2 filesystem:
+
+```bash
+$ ansible -i /path/inventory/ocp_inventory_nfs_logging_metrics_311 nodes -m shell -a "cat /etc/sysconfig/docker-storage && docker info"
+
+# docker info
+Containers: 4
+ Running: 4
+ Paused: 0
+ Stopped: 0
+Images: 4
+Server Version: 1.12.6
+Storage Driver: overlay2
+...
+```
+
+###
+
 
 
 
