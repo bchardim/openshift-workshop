@@ -11,14 +11,14 @@ Day 2 Operations for Openshift 3
 
 https://docs.openshift.com/container-platform/3.11/welcome/index.html   
 
-
+<br><br>
 ## Openshift 3 Architecture
 
 The following workshop applies for a test Openshift 3.11 cluster using OCS 3.11 with gluster in independent mode.
 
 ![alt text]( images/arch-independent.png "Architecture")  
 
-
+<br><br>
 ## Openshift 3 Upgrade
 
 ### Official Documentation
@@ -69,7 +69,6 @@ $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
 ```
 
-
 * Quick upgrade verify.
 
 ```bash
@@ -87,7 +86,7 @@ $ oc get -n default dc/router -o json | grep \"image\"
 * Run Openshift 3 HealthCheck procedure (see next section).
 
 
-
+<br><br>
 ## Openshift 3 HealthCheck
 
 ### Official Documentation
@@ -276,10 +275,9 @@ Verify all nodes have direct and inverse resolution.
 $ ansible -i hosts all -m shell -a 'host $(hostname); host $(ip a | grep "inet 10." | awk  "{print \$2}" | cut -d/ -f1)' -u quicklab -b
 ```
 
-
 ### Storage
 
-### Nodes free space
+#### Nodes free space
 
 Master instances need at least 40 GB of hard disk space for the /var directory. Check the disk usage of a master host using the df command:
 
@@ -287,7 +285,7 @@ Master instances need at least 40 GB of hard disk space for the /var directory. 
 ansible -i hosts -m shell -a "df -hT"
 ```
 
-### Check Heketi OCS status
+#### Check Heketi OCS status
 
 Run the following script in one master and review the result:
 
@@ -344,7 +342,7 @@ glusterfs-storage-block       gluster.org/glusterblock   1d
 At least on storage class must be configured as default
 
 
-### Checking PVC and PV
+#### Checking PVC and PV
 
 Check all PVC are bond to a PV.
 
@@ -354,7 +352,7 @@ $ oc get pvc --all-namespaces
 ```
 
 
-### Check PVC and use it on APP
+#### Checking PVC and use it on APP
 
 ```bash
 $ oc new-project testme
@@ -604,7 +602,7 @@ $ ansible -i hosts --limit nodes  -m shell -a "/usr/bin/openshift version" -u qu
 
 
 
-
+<br><br>
 ## Openshift 3 Certificates
 
 ### Official Documentation
@@ -682,6 +680,8 @@ The following procedure can be executed in order to verify redeploy certificate 
 
 Openshift Cluster certificates health.
 
+* etcd certificates.
+
 ```bash
 $ oc get pods --all-namespaces
 $ oc get nodes
@@ -693,7 +693,7 @@ master# etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE 
   --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS member list
 ```
 
-Router and Registry certificates health
+* Router and Registry certificates health.
 
 ```bash
 $ oc -n default get deploymentconfigs/router-custom
@@ -703,7 +703,7 @@ $ curl -kv https://docker-registry-default.apps.info.net/healthz
 $ firefox https://registry-console-default.apps.info.net
 ```
 
-External Registry Access.
+* External Registry Access.
 
 ```bash
 $ oc whoami -t
@@ -714,13 +714,13 @@ $ sudo docker tag e42d0dccf073 https://docker-registry-default.apps.info.net/htt
 $ sudo docker push https://docker-registry-default.apps.info.net/httpd-test/ruby-22-centos7:test
 ```
 
-Check certificate renew.
+* Check certificate renew.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/certificate_expiry/easy-mode.yaml -e openshift_certificate_expiry_html_report_path=/tmp/cert-expiry-report.html -e openshift_certificate_expiry_json_results_path=/tmp/cert-expiry-report.json -e openshift_is_atomic=false -e ansible_distribution=RedHat
 ```
 
-
+<br><br>
 ## Scaling and Performance
 
 ### Official Documentation
@@ -967,9 +967,7 @@ $$ heketi-cli topology info
 ```
 
 
-
-
-
+<br><br>
 ## Openshift 3 Backup
 
 ### Official Documentation
@@ -1245,6 +1243,7 @@ $ oc api-resources --namespaced=true -o name
 https://docs.openshift.com/container-platform/3.11/admin_guide/manage_users.html
 
 
+<br><br>
 ## Openshift 3 Logging with ELK
 
 ### Official Documentation
@@ -1252,6 +1251,7 @@ https://docs.openshift.com/container-platform/3.11/admin_guide/manage_users.html
 https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logging.html
 
 
+<br><br>
 ## Openshift 3 Monitoring with Prometheus and Grafana
 
 ### Official Documentation
