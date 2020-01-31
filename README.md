@@ -891,14 +891,83 @@ More info:
 https://docs.openshift.com/container-platform/3.11/scaling_performance/managing_hugepages.html
 
 
-
-
 ## Openshift 3 Storage
 
 ### Official Documentation
 
 https://docs.openshift.com/container-platform/3.11/install_config/storage_examples/gluster_example.html
 https://access.redhat.com/documentation/en-us/red_hat_gluster_storage/3.5/html-single/administration_guide/index
+
+
+### Troubleshooting OCS3 independent mode
+
+Here are a series of useful commands to verify the status of OCS and Heketi. Remember that independent OCS is mounted on an external cluster, so we must connect to these machines to know their status. On the other hand, Heketi is a pod within the glusterfs project that manages the independent OCS nodes from a central point. Heketi exposes an API that is the one that Openshift uses to create, delete and manage dynamic volumes provided by OCS.
+
+
+* Glusterd service status
+
+```bash
+[root@srv04 ~]# systemctl status glusterd
+...
+```
+
+* Status of volumes managed by Gluster. We see that everyone is online.
+
+```bash
+[root@srv04 ~]# gluster vol status
+Status of volume: heketidbstorage
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+------------------------------------------------------------------------------
+Brick 10.66.8.62:/var/lib/heketi/mounts/vg_
+7f6984d6ee744833bc85ba7cf3c4d77f/brick_1e34
+fa7cd209930837302f5079d0a9f4/brick          49152     0          Y       3036
+Brick 10.66.8.66:/var/lib/heketi/mounts/vg_
+aeb5254e5ee3b863b841fb42fe24e531/brick_5d2f
+56e58467fdf5210582b31876caeb/brick          49152     0          Y       3762
+Brick 10.66.8.65:/var/lib/heketi/mounts/vg_
+086f3a9967ce9463d68e8e0413d24109/brick_5d75
+c89e2ebd66e82a8aa08d0d16cd77/brick          49152     0          Y       21963
+Self-heal Daemon on localhost               N/A       N/A        Y       24735
+...
+```
+
+* List of all volumes created in OCS.
+
+```bash
+[root@srv04 ~]# gluster vol list
+...
+```
+
+* Detailed information of a specific volume.
+
+```bash
+[root@srv04 ~]# gluster vol info vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a
+...
+```
+
+* Information about the health status of a volume.
+  If there are still nodes that have not been able to replicate the current status, so they have pending changes. Number entries equal to 0, means that there are no pending changes to write to the node's brick. 
+
+```bash
+[root@srv04 ~]# gluster volume heal vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a info
+...
+```
+
+* Heketi pod commands.
+
+```bash
+$ oc project glusterfs
+$ oc get pods
+$ oc rsh heketi-storage-ind-1-z97hw
+
+$$ heketi-cli volume list
+$$ heketi-cli blockvolume list
+$$ heketi-cli topology info
+...
+```
+
+
+
 
 
 ## Openshift 3 Backup
