@@ -7,7 +7,7 @@ Day 2 Operations for Openshift 3
 ## Disclaimer
 
 **This is a reference manual for day 2 operations on Openshift 3 for didactic use only so it is not expected to use it for production environments.** 
-**Please use the official documentation instead for production usage:**
+**Please use the latest official documentation instead for production usage. Changes in the procedures can appear on each specific release.**
 
 https://docs.openshift.com/container-platform/3.11/welcome/index.html   
 
@@ -51,26 +51,26 @@ openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.82
 ```
 Change 3.11.82 to 3.11.117 for example
 
-* From bastion node, upgrade the control plane
+* From bastion node, upgrade the control plane.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
 ```
 
-* From bastion node, upgrade infra nodes
+* From bastion node, upgrade infra nodes.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
 ```
 
-* From bastion node, upgrade worker nodes
+* From bastion node, upgrade worker nodes.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
 ```
 
 
-* Quick upgrade verify
+* Quick upgrade verify.
 
 ```bash
 $ oc get nodes
@@ -84,7 +84,7 @@ $ oc get -n default dc/router -o json | grep \"image\"
     "image": "openshift3/ose-haproxy-router:v3.11.117",
 ```
 
-* Run Openshift 3 HealthCheck procedure (next section)
+* Run Openshift 3 HealthCheck procedure (see next section).
 
 
 
@@ -178,7 +178,7 @@ NAME              CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
 docker-registry   172.30.150.7   <none>        5000/TCP   3d
 ```
 
-*172.30.150.7 equivalent IP match*
+-> 172.30.150.7 equivalent IP match
 
 
 #### API service and web console
@@ -243,15 +243,15 @@ $ curl -kv https://docker-registry.default.svc.cluster.local:5000/healthz
 sh-4.2$ *exit*
 
 ```
-*The HTTP/1.1 200 OK response means the node is correctly connecting.*
+-> The HTTP/1.1 200 OK response means the node is correctly connecting.
 
 ```bash
 $ oc delete project sdn-test
 project "sdn-test" deleted
 ```
 
-To verify the functionality of the routers, check the registry service once more, but this time from outside the cluster:
-(Check external access to SDN )
+* To verify the functionality of the routers, check the registry service once more, but this time from outside the cluster:
+-> Check external access to SDN
 
 ```bash
 $ curl -kv https://docker-registry-default.apps.example.com/healthz
@@ -264,13 +264,13 @@ $ curl -kv https://docker-registry-default.apps.example.com/healthz
 
 ### DNS
 
-Verify wilcard DNS points to LB
+Verify wilcard DNS points to LB.
 
 ```bash
 $ dig *.apps.2e5b.example.opentlc.com
 ```
 
-Verify all nodes have direct and inverse resolution
+Verify all nodes have direct and inverse resolution.
 
 ```bash
 $ ansible -i hosts all -m shell -a 'host $(hostname); host $(ip a | grep "inet 10." | awk  "{print \$2}" | cut -d/ -f1)' -u quicklab -b
@@ -346,7 +346,7 @@ At least on storage class must be configured as default
 
 ### Checking PVC and PV
 
-Check all PVC are bond to a PV
+Check all PVC are bond to a PV.
 
 ```bash
 $ oc get pv
@@ -406,7 +406,7 @@ $ oc get events
 
 ### Docker storage
 
-The Docker storage disk is mounted as /var/lib/docker and formatted with xfs file system. Docker storage is configured to use overlay2 filesystem:
+Docker storage disk is mounted as /var/lib/docker and formatted with xfs file system. Docker storage is configured to use overlay2 filesystem:
 
 ```bash
 $ ansible -i /path/inventory/ocp_inventory_nfs_logging_metrics_311 nodes -m shell -a "cat /etc/sysconfig/docker-storage && docker info"
@@ -424,7 +424,7 @@ Storage Driver: overlay2
 
 ### API service status
 
-The OpenShift API service runs on all master instances. To see the status of the service, view the master-api pods in the kube-system project:
+OpenShift API service runs on all master instances. To see the status of the service, view the master-api pods in the kube-system project:
 
 ```bash
 $ oc get pod -n kube-system -l openshift.io/component=api
@@ -432,7 +432,7 @@ NAME                             READY     STATUS    RESTARTS   AGE
 master-api-myserver.com          1/1       Running   0          56d
 ```
 
-The API service exposes a health check, which can be queried externally using the API host name:
+API service exposes a health check, which can be queried externally using the API host name:
 
 ```bash
 $ oc get pod -n kube-system -o wide
@@ -445,7 +445,7 @@ ok
 
 ### Controller role verification
 
-The OpenShift Container Platform controller service, is available across all master hosts. The service runs in active/passive mode, meaning it should only be running on one master at any time.
+OpenShift Container Platform controller service, is available across all master hosts. The service runs in active/passive mode, meaning it should only be running on one master at any time.
   Verify the master host running the controller service as a cluster-admin user:
 
 
@@ -574,7 +574,7 @@ Save the changes and reboot the node
 
 ### NTP synchronization
 
-Check if all nodes have NTP activated and sync
+Check if all nodes have NTP activated and sync.
 
 ```bash
 $ ansible -i hosts -m shell -a 'timedatectl | grep NTP' -u quicklab -b
@@ -679,7 +679,7 @@ $ oc rollout latest dc/router-custom
 The following procedure can be executed in order to verify redeploy certificate healthcheck.
 
 
-* Openshift Cluster certificates health,
+Openshift Cluster certificates health.
 
 ```bash
 $ oc get pods --all-namespaces
@@ -692,7 +692,7 @@ master# etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE 
   --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS member list
 ```
 
-* Router and Registry certificates health,
+Router and Registry certificates health
 
 ```bash
 $ oc -n default get deploymentconfigs/router-custom
@@ -702,7 +702,7 @@ $ curl -kv https://docker-registry-default.apps.info.net/healthz
 $ firefox https://registry-console-default.apps.info.net
 ```
 
-* External Registry Access
+External Registry Access.
 
 ```bash
 $ oc whoami -t
@@ -713,7 +713,7 @@ $ sudo docker tag e42d0dccf073 https://docker-registry-default.apps.info.net/htt
 $ sudo docker push https://docker-registry-default.apps.info.net/httpd-test/ruby-22-centos7:test
 ```
 
-* Check certificate renew
+Check certificate renew.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/certificate_expiry/easy-mode.yaml -e openshift_certificate_expiry_html_report_path=/tmp/cert-expiry-report.html -e openshift_certificate_expiry_json_results_path=/tmp/cert-expiry-report.json -e openshift_is_atomic=false -e ansible_distribution=RedHat
@@ -769,4 +769,266 @@ https://docs.openshift.com/container-platform/3.11/scaling_performance/index.htm
 ### Official Documentation
 
 https://docs.openshift.com/container-platform/3.11/day_two_guide/environment_backup.html
+
+
+### Master backup
+
+It is recomended to execute the backup procedure before any significant Openshift cluster infrastructure change as an upgrade.
+
+* On each master node make a backup of the critical files:
+
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+master$ sudo cp -aR /etc/origin ${MYBACKUPDIR}/etc
+master$ sudo cp -aR /etc/sysconfig/ ${MYBACKUPDIR}/etc/sysconfig/
+```
+
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+master$ sudo mkdir -p ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors
+master$ sudo cp -aR /etc/sysconfig/{iptables,docker-*,flanneld} ${MYBACKUPDIR}/etc/sysconfig/
+master$ sudo cp -aR /etc/dnsmasq* /etc/cni ${MYBACKUPDIR}/etc/
+master$ sudo cp -aR /etc/pki/ca-trust/source/anchors/* ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors/
+```
+
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo mkdir -p ${MYBACKUPDIR}
+master$ rpm -qa | sort | sudo tee $MYBACKUPDIR/packages.txt
+```
+
+* If needed backup can be compressed:
+
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo tar -zcvf /backup/$(hostname)-$(date +%Y%m%d).tar.gz $MYBACKUPDIR
+master$ sudo rm -Rf ${MYBACKUPDIR}
+```
+
+### Node backup
+
+Creating a backup of a node host is a different use case from backing up a master host. Because master hosts contain many important files, creating a backup is highly recommended. However, the nature of nodes is that anything special is replicated over the nodes in case of failover, and they typically do not contain data that is necessary to run an environment. If a backup of a node contains something necessary to run an environment, then a creating a backup is recommended.
+
+On each node run the following procedure:
+
+* Node config files backup
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+node$ sudo cp -aR /etc/origin ${MYBACKUPDIR}/etc
+node$ sudo cp -aR /etc/sysconfig/atomic-openshift-node ${MYBACKUPDIR}/etc/sysconfig/
+```
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+node$ sudo mkdir -p ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors
+node$ sudo cp -aR /etc/sysconfig/{iptables,docker-*,flanneld} ${MYBACKUPDIR}/etc/sysconfig/
+node$ sudo cp -aR /etc/dnsmasq* /etc/cni ${MYBACKUPDIR}/etc/
+node$ sudo cp -aR /etc/pki/ca-trust/source/anchors/* ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors/
+```
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo mkdir -p ${MYBACKUPDIR}
+node$ rpm -qa | sort | sudo tee $MYBACKUPDIR/packages.txt
+```
+
+* If needed backup can be compressed:
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo tar -zcvf /backup/$(hostname)-$(date +%Y%m%d).tar.gz $MYBACKUPDIR
+node$ sudo rm -Rf ${MYBACKUPDIR}
+```
+
+### Ansible inventory and instalaton files backup
+
+It is recommended to keep a backup of ansible inventory and installation files used on the bastion host when installing the cluster. These files will be needed during the whole openshift livecycle.
+Use git in order to track changes in these files.
+
+
+### Application data backup
+
+In many cases, you can back up application data by using the oc rsync command, assuming rsync is installed within the container image. The Red Hat rhel7 base image contains rsync. Therefore, all images that are based on rhel7 contain it as well.
+
+This is a generic backup of application data and does not take into account application-specific backup procedures, for example, special export and import procedures for database systems.
+
+* Get the application data mountPath from the deploymentconfig:
+
+```bash
+$ oc get dc/jenkins -o jsonpath='{ .spec.template.spec.containers[?(@.name=="jenkins")].volumeMounts[?(@.name=="jenkins-data")].mountPath }'
+/var/lib/jenkins
+```
+
+* Get the name of the pod that is currently running:
+
+```bash
+$ oc get pod --selector=deploymentconfig=jenkins -o jsonpath='{ .metadata.name }'
+jenkins-1-37nux
+```
+
+* Use the oc rsync command to copy application data:
+
+```bash
+$ oc rsync jenkins-1-37nux:/var/lib/jenkins /tmp/
+```
+
+### etcd backup
+
+etcd is the key value store for all object definitions, as well as the persistent master state. Other components watch for changes, then bring themselves into the desired state.
+
+```bash
+$ etcdctl -v
+etcdctl version: 3.2.22
+API version: 2
+```
+
+The etcd backup process is composed of two different procedures:
+
+* Configuration backup: Including the required etcd configuration and certificates
+
+* Data backup: Including both v2 and v3 data model.
+
+You can perform the data backup process on any host that has connectivity to the etcd cluster, where the proper certificates are provided, and where the etcdctl tool is installed.
+The backup files must be copied to an external system, ideally outside the OpenShift Container Platform environment, and then encrypted.
+
+
+#### Backing up etcd configuration files
+
+On each master node where etcd cluster is running, execute the following procedure:
+
+```bash
+master$ mkdir -p /backup/etcd-config-$(date +%Y%m%d)/
+master$ cp -R /etc/etcd/ /backup/etcd-config-$(date +%Y%m%d)/
+```
+
+#### Backing up etcd data
+
+Before backing up etcd:
+
+* etcdctl binaries must be available or, in containerized installations, the rhel7/etcd container must be available.
+
+* Ensure that the OpenShift Container Platform API service is running.
+
+* Ensure connectivity with the etcd cluster (port 2379/tcp).
+
+* Ensure the proper certificates to connect to the etcd cluster.
+
+
+```bash
+master$ source /etc/etcd/etcd.conf
+master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS cluster-health
+master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS member list
+```
+
+If etcd runs as a static pod, run the following commands:
+
+* Check if etcd runs as a static pod.
+
+```bash
+$ oc get pods -n kube-system | grep etcd
+srv01.info.net          1/1       Running   0          126d
+srv02.info.net          1/1       Running   4          33d
+srv03.info.net          1/1       Running   2          126d
+```
+
+* Obtain the etcd endpoint IP address from the static pod manifest:
+
+```bash
+$ export ETCD_POD_MANIFEST="/etc/origin/node/pods/etcd.yaml"
+$ export ETCD_EP=$(grep https ${ETCD_POD_MANIFEST} | cut -d '/' -f3)
+```
+
+* Get etcd pod name:
+
+```bash
+$ oc login -u system:admin
+$ export ETCD_POD=$(oc get pods -n kube-system | grep -o -m 1 '\S*etcd\S*')
+```
+
+* Take a snapshot of the etcd data in the pod and store it locally:
+
+```bash
+$ oc project kube-system
+$ oc exec ${ETCD_POD} -c etcd -- /bin/bash -c "ETCDCTL_API=3 etcdctl \
+    --cert /etc/etcd/peer.crt \
+    --key /etc/etcd/peer.key \
+    --cacert /etc/etcd/ca.crt \
+    --endpoints $ETCD_EP \
+    snapshot save /var/lib/etcd/snapshot.db"
+```
+
+If it is saved in the /var/lib/etcd folder, it is the same as saving it on the master machine where it runs, since it has that host folder mounted where the pod is running
+
+
+### Project backup
+
+Creating a backup of all relevant data involves exporting all important information, then restoring into a new project if needed.
+
+* List all the relevant data to back up in the target project (myproject in this case):
+
+```bash
+$ oc project myproject
+$ oc get all
+NAME         TYPE      FROM      LATEST
+bc/ruby-ex   Source    Git       1
+
+NAME               TYPE      FROM          STATUS     STARTED         DURATION
+builds/ruby-ex-1   Source    Git@c457001   Complete   2 minutes ago   35s
+
+NAME                 DOCKER REPO                                     TAGS      UPDATED
+is/guestbook         10.111.255.221:5000/myproject/guestbook         latest    2 minutes ago
+is/hello-openshift   10.111.255.221:5000/myproject/hello-openshift   latest    2 minutes ago
+is/ruby-22-centos7   10.111.255.221:5000/myproject/ruby-22-centos7   latest    2 minutes ago
+is/ruby-ex           10.111.255.221:5000/myproject/ruby-ex           latest    2 minutes ago
+
+NAME                 REVISION   DESIRED   CURRENT   TRIGGERED BY
+dc/guestbook         1          1         1         config,image(guestbook:latest)
+dc/hello-openshift   1          1         1         config,image(hello-openshift:latest)
+dc/ruby-ex           1          1         1         config,image(ruby-ex:latest)
+
+NAME                   DESIRED   CURRENT   READY     AGE
+rc/guestbook-1         1         1         1         2m
+rc/hello-openshift-1   1         1         1         2m
+rc/ruby-ex-1           1         1         1         2m
+
+NAME                  CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+svc/guestbook         10.111.105.84    <none>        3000/TCP            2m
+svc/hello-openshift   10.111.230.24    <none>        8080/TCP,8888/TCP   2m
+svc/ruby-ex           10.111.232.117   <none>        8080/TCP            2m
+
+NAME                         READY     STATUS      RESTARTS   AGE
+po/guestbook-1-c010g         1/1       Running     0          2m
+po/hello-openshift-1-4zw2q   1/1       Running     0          2m
+po/ruby-ex-1-build           0/1       Completed   0          2m
+po/ruby-ex-1-rxc74           1/1       Running     0          2m
+```
+
+
+* Export the project objects to a .yaml files.
+
+```bash
+$ oc get -o yaml --export all > project.yaml
+```
+
+* Export the project’s role bindings, secrets, service accounts, and persistent volume claims:
+
+```bash
+$ for object in rolebindings serviceaccounts secrets imagestreamtags cm egressnetworkpolicies rolebindingrestrictions limitranges resourcequotas pvc templates cronjobs statefulsets hpa deployments replicasets poddisruptionbudget endpoints
+do
+  oc get -o yaml --export $object > $object.yaml
+done
+```
+
+* To list all the namespaced objects:
+
+```bash
+$ oc api-resources --namespaced=true -o name
+```
 
