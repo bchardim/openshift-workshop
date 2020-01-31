@@ -407,7 +407,7 @@ $ oc get events
 Docker storage disk is mounted as /var/lib/docker and formatted with xfs file system. Docker storage is configured to use overlay2 filesystem:
 
 ```bash
-$ ansible -i /path/inventory/ocp_inventory_nfs_logging_metrics_311 nodes -m shell -a "cat /etc/sysconfig/docker-storage && docker info"
+$ ansible -i hosts nodes -m shell -a "cat /etc/sysconfig/docker-storage && docker info"
 
 # docker info
 Containers: 4
@@ -491,10 +491,10 @@ Installation produces certificates that provide secure connections to multiple c
 These certificates can be found within the /etc/origin/master directory for the master nodes and /etc/origin/node directory for the infra and app nodes.
 
 ```bash
-# oc -n default get dc docker-registry -o jsonpath='{.spec.template.spec.containers[].env[?(@.name=="REGISTRY_OPENSHIFT_SERVER_ADDR")].value}{"\n"}'
+$ oc -n default get dc docker-registry -o jsonpath='{.spec.template.spec.containers[].env[?(@.name=="REGISTRY_OPENSHIFT_SERVER_ADDR")].value}{"\n"}'
 docker-registry.default.svc:5000
 
-# curl -kv https://docker-registry.default.svc:5000/healthz
+$ curl -kv https://docker-registry.default.svc:5000/healthz
 * About to connect() to docker-registry.default.svc port 5000 (#0)
 *   Trying 172.30.11.171...
 * Connected to docker-registry.default.svc (172.30.11.171) port 5000 (#0)
@@ -907,14 +907,14 @@ Here are a series of useful commands to verify the status of OCS and Heketi. Rem
 * Glusterd service status
 
 ```bash
-[root@srv04 ~]# systemctl status glusterd
+[root@srv04 ~]$ systemctl status glusterd
 ...
 ```
 
 * Status of volumes managed by Gluster. We see that everyone is online.
 
 ```bash
-[root@srv04 ~]# gluster vol status
+[root@srv04 ~]$ gluster vol status
 Status of volume: heketidbstorage
 Gluster process                             TCP Port  RDMA Port  Online  Pid
 ------------------------------------------------------------------------------
@@ -934,14 +934,14 @@ Self-heal Daemon on localhost               N/A       N/A        Y       24735
 * List of all volumes created in OCS.
 
 ```bash
-[root@srv04 ~]# gluster vol list
+[root@srv04 ~]$ gluster vol list
 ...
 ```
 
 * Detailed information of a specific volume.
 
 ```bash
-[root@srv04 ~]# gluster vol info vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a
+[root@srv04 ~]$ gluster vol info vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a
 ...
 ```
 
@@ -949,7 +949,7 @@ Self-heal Daemon on localhost               N/A       N/A        Y       24735
   If there are still nodes that have not been able to replicate the current status, so they have pending changes. Number entries equal to 0, means that there are no pending changes to write to the node's brick. 
 
 ```bash
-[root@srv04 ~]# gluster volume heal vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a info
+[root@srv04 ~]$ gluster volume heal vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a info
 ...
 ```
 
