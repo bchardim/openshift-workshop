@@ -600,6 +600,7 @@ $ ansible -i hosts --limit nodes  -m shell -a "yum list installed | grep openshi
 $ ansible -i hosts --limit nodes  -m shell -a "/usr/bin/openshift version" -u quicklab -b
 ```
 
+### Router Sharding Status
 
 
 
@@ -720,25 +721,176 @@ $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts /usr/shar
 ```
 
 
-## Openshift 3 Users and Roles 
+## Scaling and Performance
 
 ### Official Documentation
 
-https://docs.openshift.com/container-platform/3.11/admin_guide/manage_users.html
+https://docs.openshift.com/container-platform/3.11/scaling_performance/index.html
 
 
-## Openshift 3 Logging with ELK
+### Add new nodes 
 
-### Official Documentation
+You can add new hosts to your cluster by running the scaleup.yml playbook. This playbook queries the master, generates and distributes new certificates for the new hosts, and then runs the configuration playbooks on only the new hosts. Before running the scaleup.yml playbook, complete all prerequisite host preparation steps.
 
-https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logging.html
+https://docs.openshift.com/container-platform/3.11/install/host_preparation.html#preparing-for-advanced-installations-origin
+
+* Ensure you have the latest playbooks by updating the openshift-ansible package:
+
+```bash
+$ yum update openshift-ansible
+```
+
+* Edit your inventory file (hosts in this case)  and add new_<host_type> to the [OSEv3:children] section:
+
+```bash
+[OSEv3:children]
+masters
+nodes
+new_nodes
+```
+To add new master hosts, add new_masters
 
 
-## Openshift 3 Monitoring with Prometheus and Grafana
+* Create a [new_<host_type>] section to specify host information for the new hosts. Format this section like an existing section, as shown in the following example of adding a new node:
 
-### Official Documentation
+```bash
+...
+[new_nodes]
+node3.example.com openshift_node_group_name='node-config-infra'
+...
+```
+When adding new masters, add hosts to both the [new_masters] section and the [new_nodes] section to ensure that the new master host is part of the OpenShift SDN.
 
-https://docs.openshift.com/container-platform/3.11/install_config/prometheus_cluster_monitoring.html
+* Change to the playbook directory and run the scaleup.yml playbook
+
+For additional nodes:
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible
+$ ansible-playbook -i /path/to/hosts playbooks/openshift-node/scaleup.yml
+```
+
+For additional masters:
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible
+$ ansible-playbook -i /path/to/hosts playbooks/openshift-master/scaleup.yml
+```
+
+* Set the node label to logging-infra-fluentd=true, if you deployed the EFK stack in your cluster.
+
+```bash
+$ oc label node/new-node.example.com logging-infra-fluentd=true
+```
+
+* Verify the installation
+
+Verify that the master is started and nodes are registered and reporting in Ready status.
+
+```bash
+$ oc get nodes
+NAME                   STATUS    ROLES     AGE       VERSION
+master.example.com     Ready     master    7h        v1.9.1+a0ce1bc657
+node1.example.com      Ready     compute   7h        v1.9.1+a0ce1bc657
+node2.example.com      Ready     compute   7h        v1.9.1+a0ce1bc657
+```
+
+To verify that the web console is installed correctly, use the master host name and the web console port number to access the web console with a web browser.
+
+```bash
+$ firefox https://master.openshift.com:443/console
+```
+
+### Overcommitting
+
+You can use overcommit procedures so that resources such as CPU and memory are more accessible to the parts of your cluster that need them.
+
+Note that when you overcommit, there is a risk that another application may not have access to the resources it requires when it needs them, which will result in reduced performance. However, this may be an acceptable trade-off in favor of increased density and reduced costs. For example, development, quality assurance (QA), or test environments may be overcommitted, whereas production might not be.
+
+
+```bash
+$ cat hosts
+...
+openshift_master_admission_plugin_config={"ClusterResourceOverride": {"configuration": {"apiVersion": "v1", "cpuRequestToLimitPercent": 20, "kind": "ClusterResourceOverrideConfig"}}, "PersistentVolumeClaimResize": {"configuration": {"apiVersion": "v1", "disable": false, "kind": "DefaultAdmissionConfig"}}}
+...
+```
+
+* cpuRequestToLimitPercent
+
+(optional, 1-100) If a container CPU limit has been specified or defaulted, the CPU request is overridden to this percentage of the limit.
+
+
+* memoryRequestToLimitPercent
+
+(optional, 1-100) If a container memory limit has been specified or defaulted, the memory request is overridden to this percentage of the limit.
+
+
+### Optimizing Network Performance
+
+The OpenShift SDN uses OpenvSwitch, virtual extensible LAN (VXLAN) tunnels, OpenFlow rules, and iptables. This network can be tuned by using jumbo frames, network interface cards (NIC) offloads, multi-queue, and ethtool settings.
+
+#### Optimizing the MTU for Your Network
+
+There are two important maximum transmission units (MTUs): the network interface card (NIC) MTU and the SDN overlay’s MTU.
+
+The NIC MTU must be less than or equal to the maximum supported value of the NIC of your network. If you are optimizing for throughput, pick the largest possible value. If you are optimizing for lowest latency, pick a lower value.
+
+The SDN overlay’s MTU must be less than the NIC MTU by 50 bytes at a minimum. This accounts for the SDN overlay header. So, on a normal ethernet network, set this to 1450. On a jumbo frame ethernet network, set this to 8950.
+
+This 50 byte overlay header is relevant to the OpenShift SDN. Other SDN solutions might require the value to be more or less.
+
+
+```bash
+$ oc get cm node-config-compute -o yaml
+...
+...
+networkConfig:
+   mtu: 1450
+...
+...
+```
+
+
+### Routing Optimization
+
+The OpenShift Container Platform router is the ingress point for all external traffic destined for OpenShift Container Platform services.
+
+When evaluating a single HAProxy router performance in terms of HTTP requests handled per second, the performance varies depending on many factors. In particular:
+
+* HTTP keep-alive/close mode,
+
+* route type
+
+* TLS session resumption client support
+
+* number of concurrent connections per target route
+
+* number of target routes
+
+* backend server page size
+
+* underlying infrastructure (network/SDN solution, CPU, and so on)
+
+
+While performance in your specific environment will vary, our lab tests on a public cloud instance of size 4 vCPU/16GB RAM, a single HAProxy router handling 100 routes terminated by backends serving 1kB static pages is able to handle the following number of transactions per second.
+
+More info:
+
+https://docs.openshift.com/container-platform/3.11/scaling_performance/routing_optimization.html
+
+
+### Managing Huge Pages
+
+Memory is managed in blocks known as pages. On most systems, a page is 4Ki. 1Mi of memory is equal to 256 pages; 1Gi of memory is 262,144 pages, and so on. CPUs have a built-in memory management unit that manages a list of these pages in hardware. The Translation Lookaside Buffer (TLB) is a small hardware cache of virtual-to-physical page mappings. If the virtual address passed in a hardware instruction can be found in the TLB, the mapping can be determined quickly. If not, a TLB miss occurs, and the system falls back to slower, software-based address translation, resulting in performance issues. Since the size of the TLB is fixed, the only way to reduce the chance of a TLB miss is to increase the page size.
+
+A huge page is a memory page that is larger than 4Ki. On x86_64 architectures, there are two common huge page sizes: 2Mi and 1Gi. Sizes vary on other architectures. In order to use huge pages, code must be written so that applications are aware of them. Transparent Huge Pages (THP) attempt to automate the management of huge pages without application knowledge, but they have limitations.
+
+
+More info:
+
+https://docs.openshift.com/container-platform/3.11/scaling_performance/managing_hugepages.html
+
+
 
 
 ## Openshift 3 Storage
@@ -747,21 +899,6 @@ https://docs.openshift.com/container-platform/3.11/install_config/prometheus_clu
 
 https://docs.openshift.com/container-platform/3.11/install_config/storage_examples/gluster_example.html
 https://access.redhat.com/documentation/en-us/red_hat_gluster_storage/3.5/html-single/administration_guide/index
-
-
-## Openshift 3 Administration
-
-### Official Documentation
-
-https://docs.openshift.com/container-platform/3.11/admin_guide/index.html
-
-
-
-## Scaling and Performance
-
-### Official Documentation
-
-https://docs.openshift.com/container-platform/3.11/scaling_performance/index.html
 
 
 ## Openshift 3 Backup
@@ -1031,4 +1168,25 @@ done
 ```bash
 $ oc api-resources --namespaced=true -o name
 ```
+
+## Openshift 3 Users and Roles 
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/admin_guide/manage_users.html
+
+
+## Openshift 3 Logging with ELK
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logging.html
+
+
+## Openshift 3 Monitoring with Prometheus and Grafana
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/install_config/prometheus_cluster_monitoring.html
+
 
