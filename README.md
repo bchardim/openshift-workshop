@@ -158,7 +158,7 @@ Master services keep their state synchronized using the etcd key-value store. Th
 
 
 ```bash
-# oc get nodes
+$ oc get nodes
 ...
 ```
 (Ready status means that master hosts can communicate with node hosts and that the nodes are ready to run pods (excluding the nodes in which scheduling is disabled))
@@ -169,10 +169,10 @@ Master services keep their state synchronized using the etcd key-value store. Th
 SkyDNS provides name resolution of local services running in OpenShift Container Platform. This service uses TCP and UDP port 8053.
 
 ```bash
-# dig +short docker-registry.default.svc.cluster.local
+$ dig +short docker-registry.default.svc.cluster.local
 172.30.150.7
 
-# oc get svc/docker-registry -n default
+$ oc get svc/docker-registry -n default
 NAME              CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
 docker-registry   172.30.150.7   <none>        5000/TCP   3d
 ```
@@ -282,7 +282,7 @@ $ ansible -i hosts all -m shell -a 'host $(hostname); host $(ip a | grep "inet 1
 Master instances need at least 40 GB of hard disk space for the /var directory. Check the disk usage of a master host using the df command:
 
 ```bash
-ansible -i hosts -m shell -a "df -hT"
+$ ansible -i hosts -m shell -a "df -hT"
 ```
 
 #### Check Heketi OCS status
