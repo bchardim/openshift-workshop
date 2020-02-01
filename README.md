@@ -1928,9 +1928,8 @@ parameters:
 - name: PROJECT_ADMIN_USER
 - name: PROJECT_REQUESTING_USER
 
-$ oc create -f template.yaml -n default
+$ oc create -f /tmp/template.yaml -n default
 $ oc new-project def-quota
-$ oc get limitranges
 $ oc get limits
 $ oc get quota
 ```
@@ -1939,7 +1938,62 @@ $ oc get quota
 
 #### LAB: Limits and Quota
 
+* As a cluster administrator, add a quota and a limit range to the project to provide default resource requests for pods in the project 'quota-dev'
 
+```bash
+$ oc login -u admin
+$ oc new-project quota-dev
+
+$ cat <<EOF > /tmp/limits.yml
+apiVersion: "v1"
+kind: "LimitRange"
+metadata:
+  name: "project-limits"
+spec:
+  limits:
+    - type: "Container"
+      default:
+        cpu: "250m"
+EOF
+
+$ oc create -f /tmp/limits.yml
+$ oc describe limits
+```
+
+```bash
+$ cat <<EOF > /tmp/quota.yml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: project-quota
+spec:
+  hard:
+    cpu: "900m"
+EOF
+
+$ oc create -f /tmp/quota.yml
+$ oc describe quota
+
+$ oc login -u developer
+$ oc project quota-dev
+$ oc get limits
+$ oc get quota
+```
+
+
+* Test it
+
+```bash
+$ oc login -u developer
+$ oc project quota-dev
+$ oc new-app --name=hello --docker-image=registry.lab.example.com/openshift/hello-openshift
+$ oc describe quota
+$ oc scale dc hello --replicas=4
+$ oc get pod -o wide
+$ oc describe dc hello | grep Replicas
+$ oc get events | grep -i error
+$ oc scale dc hello --replicas=1
+```
 
 
 <br><br>
