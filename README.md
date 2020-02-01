@@ -1444,8 +1444,57 @@ $ oc adm policy add-scc-to-user anyuid -z rootuser
 
 ### Demo
 
+* As cluster admin create nginx project 
+
+```bash
+$ oc login -u admin https://ocp.info.net
+$ oc new-project nginx
+```
+
+* As admin associate developer as admin with nginx
+
+```bash
+$ oc policy add-role-to-user admin developer -n nginx
+```
+
+*  As a developer user, deploy to nginx an application that requires elevated privileges named nginx from nginx image.
+
+```bash
+$ oc login -u developer
+$ oc project nginx
+$ oc new-app --name=nginx --docker-image=registry.lab.example.com/nginx:1.13.1
+$ oc get pods
+```
+...
+* WARNING: Image "workstation.lab.example.com:5000/nginx:1.13.1" runs as the 'root' user which may not be permitted by your cluster administrator
 ...
 
+
+
++ Relax security restrictions for this project. We really need to run this container with privileged access so create a service account named rootuser that allows pods to run using any operating system user.
+
+```bash
+$ oc login -u admin
+$ oc project nginx
+$ oc create serviceaccount rootuser
+$ oc adm policy add-scc-to-user anyuid -z rootuser
+```
+
+```bash
+$ oc login -u developer
+$ oc project nginx
+$ oc patch dc/nginx --patch '{"spec":{"template":{"spec":{"serviceAccountName": "rootuser"}}}}'
+$ oc get pods
+NAME            READY     STATUS    RESTARTS   AGE
+nginx-2-qd87<   1/1       Running   0          2m
+```
+
++ Test nginx project
+
+```bash
+$ oc expose svc nginx --hostname nginx.apps.info.net
+$ curl -s http://nginx.apps.info.net
+```
 
 
 <br><br>
