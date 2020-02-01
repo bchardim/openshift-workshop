@@ -1663,9 +1663,10 @@ env:
 
 For a real-world example, you can configure Redis using a ConfigMap. To inject Redis with the recommended configuration for using Redis as a cache, the Redis configuration file should contain the following:
 
+```bash
 maxmemory 2mb
 maxmemory-policy allkeys-lru
-
+```
 
 * Create redis-test project
 
