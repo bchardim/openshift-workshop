@@ -1773,11 +1773,11 @@ Pod definition can include both resource requests and resource limits:
 
 * Resource requests
 
-    Used for scheduling, indicate that a pod is not able to run with less than the specified amount of compute resources.
+  Used for scheduling, indicate that a pod is not able to run with less than the specified amount of compute resources.
 
 * Resource limits
 
-    Used to prevent a pod from using up all compute resources from a node.
+  Used to prevent a pod from using up all compute resources from a node.
 
 
 #### Configuring Quotas
@@ -1785,9 +1785,11 @@ Pod definition can include both resource requests and resource limits:
 OpenShift can enforce quotas that track and limit the use of two kinds of resources:
 
 * Object counts
+
   The number of Kubernetes resources, such as pods, services, and routes.
 
 * Compute resources
+
   The number of physical or virtual hardware resources, such as CPU, memory, and storage capacity.
 
 
