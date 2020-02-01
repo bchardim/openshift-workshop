@@ -1848,8 +1848,8 @@ spec:
 EOF
 
 $ oc create -f limits-test.yml
-$ oc get limitranges
-$ oc describe limitranges limits-test
+$ oc get limits
+$ oc describe limits limits-test
 ```
 
 
@@ -1930,8 +1930,8 @@ parameters:
 
 $ oc create -f /tmp/template.yaml -n default
 $ oc new-project def-quota
-$ oc get limits
-$ oc get quota
+$ oc describe limits
+$ oc describe quota
 ```
 
 
@@ -1976,8 +1976,8 @@ $ oc describe quota
 
 $ oc login -u developer
 $ oc project quota-dev
-$ oc get limits
-$ oc get quota
+$ oc describe limits
+$ oc describe quota
 ```
 
 
