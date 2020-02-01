@@ -1877,6 +1877,66 @@ $ oc create clusterquota env-dev \
 --hard services=10
 ```
 
+
+### Default project template
+
+In order to create default quotas and limit ranges for new projects, specific values for CPU and memory cat been added to the default project template.
+
+```bash
+$ oc login -u admin
+$ oc adm create-bootstrap-project-template -o yaml > /tmp/template.yaml
+$ vi /tmp/template.yaml
+...
+- apiVersion: v1
+  kind: ResourceQuota
+  metadata:
+    name: ${PROJECT_NAME}-default-quota
+  spec:
+    hard:
+      pods: "10"
+      requests.storage: 20Gi
+      limits.cpu: "2"
+      limits.memory: 8Gi
+- apiVersion: v1
+  kind: LimitRange
+  metadata:
+    name: ${PROJECT_NAME}-default-limits
+    creationTimestamp: null
+  spec:
+    limits:
+      - type: Pod
+        max:
+          cpu: "1"
+          memory: 1Gi
+        min:
+          cpu: 10m
+          memory: 5Mi
+      - type: Container
+        max:
+          cpu: "1"
+          memory: 1Gi
+        min:
+          cpu: 10m
+          memory: 5Mi
+        default:
+          cpu: 100m
+          memory: 100Mi
+parameters:
+- name: PROJECT_NAME
+- name: PROJECT_DISPLAYNAME
+- name: PROJECT_DESCRIPTION
+- name: PROJECT_ADMIN_USER
+- name: PROJECT_REQUESTING_USER
+
+$ oc create -f template.yaml -n default
+$ oc new-project def-quota
+$ oc get limitranges
+$ oc get limits
+$ oc get quota
+```
+
+
+
 ### Demo: Limits and Quota
 
 
