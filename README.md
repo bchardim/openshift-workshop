@@ -1236,10 +1236,11 @@ done
 $ oc api-resources --namespaced=true -o name
 ```
 
-## Openshift 3 Users and Roles 
+## Openshift 3 Resources 
 
 ### Official Documentation
 
+https://docs.openshift.com/container-platform/3.11/admin_guide
 https://docs.openshift.com/container-platform/3.11/admin_guide/manage_users.html
 
 
@@ -1442,7 +1443,7 @@ $ oc adm policy add-scc-to-user anyuid -z rootuser
 ```
 
 
-### Demo
+### Demo: Deploy Privileged Pod
 
 * As cluster admin create nginx project. 
 
@@ -1469,9 +1470,7 @@ $ oc get pods
 **WARNING: Image "workstation.lab.example.com:5000/nginx:1.13.1" runs as the 'root' user which may not be permitted by your cluster administrator**
 ...
 
-
-
-+ Relax security restrictions for this project. We really need to run this container with privileged access so create a service account named rootuser that allows pods to run using any operating system user.
+* Relax security restrictions for this project. We really need to run this container with privileged access so create a service account named rootuser that allows pods to run using any operating system user.
 
 ```bash
 $ oc login -u admin
@@ -1489,11 +1488,169 @@ NAME            READY     STATUS    RESTARTS   AGE
 nginx-2-qd87<   1/1       Running   0          2m
 ```
 
-+ Test nginx project.
+* Test nginx project.
 
 ```bash
 $ oc expose svc nginx --hostname nginx.apps.info.net
 $ curl -s http://nginx.apps.info.net
+```
+
+### Secrets Objects
+
+Secret object provides a mechanism to hold sensitive information such as passwords, configuration files, and source repository credentials.
+
+#### Creating a Secret
+
+Secret is created before the pods is going to use it.
+
+* Create a secret object with secret data.
+
+```bash
+$ oc create secret generic secretname --from-literal=key1=secret1
+```
+
+* Update the pod service account to allow the reference to the secret.
+
+```bash
+$ oc secrets add --for=mount serviceaccount/serviceaccountname secret/secretname
+```
+
+Allows a secret to be mounted by a pod running under a specific service account
+
+* Create a pod that consumes the secret.
+
+
+### Expose secrets to pods
+
+Secrets can be mounted as data volumes or exposed as environment variables to be used by a container in a pod.
+Create a secret named secret-demo, that defines the key username and set the key's value to the user user-demo:
+
+```bash
+$ oc create secret generic demo-secret --from-literal=username=demo-user
+```
+
+To use the previous secret as the database administrator password for a MySQL database pod, define the environment variable with a reference to the secret name and the key:
+
+```bash
+env:
+  - name: MYSQL_ROOT_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        key: username
+        name: demo-secret
+```
+
+
+### ConfigMap Objects
+
+ConfigMaps are similar to secrets, but are designed to support the ability to work with strings that do not contain sensitive information.
+ConfigMaps provides mechanisms to inject configuration data into containers, they store granular information, such as individual properties, or detailed information, such as entire configuration files or JSON blobs.
+
+#### Creating a ConfigMap
+
+* Creates a ConfigMap that assigns the IP address 172.30.20.10 to the ConfigMap key named serverAddr.
+
+```bash
+$ oc create configmap special-config --from-literal=serverAddr=172.30.20.10
+```
+
+```bash
+$ oc get configmaps special-config -o yaml
+apiVersion: v1
+data:
+  key1: serverAddress=172.20.30.40
+kind: ConfigMap
+...
+```
+
+* Populate the environment variable APISERVER inside a pod definition from the config map.
+
+```bash
+env:
+  - name: APISERVER
+     valueFrom:
+        configMapKeyRef:
+            name: special-config
+            key: serverAddress
+```
+
+### Demo: Protecting Database Password
+
+Create a MySQL database container that uses a Secret for storing database authentication credentials.
+
+* As developer create new project mysql. Review secrets requiered on mysql.yml
+
+```bash
+$ oc login -u developer
+$ oc new-project mysql
+$ less mysql.yml
+...
+...
+      spec:
+        containers:
+        - capabilities: {}
+          env:
+          - name: MYSQL_USER
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: ${DATABASE_SERVICE_NAME}
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-root-password
+                name: ${DATABASE_SERVICE_NAME}
+...
+- description: The name of the OpenShift Service exposed for the database.
+  displayName: Database Service Name
+  name: DATABASE_SERVICE_NAME
+  required: true
+  value: mysql
+...
+```
+
+* Create a secret containing the credentials used by the MySQL container image, as requested by the template. Give to the secret the name mysql.
+  database user name: 'mysql'                     [template database-user key]
+  password: 'redhat'                              [template database-password key] 
+  database administrator password 'DB-admin'      [template database-root-password key]
+
+
+```bash
+$ oc create secret generic mysql --from-literal='database-user'='mysql' --from-literal='database-password'='redhat' --from-literal='database-root-password'='DB-admin'
+$ oc get secret mysql -o yaml
+apiVersion: v1
+data:
+  database-password: cmVkaGF0
+  database-root-password: ZG8yODAtYWRtaW4=
+  database-user: bXlzcWw=
+kind: Secret
+...
+``` 
+
+* Deploy MYSQL database container from template.
+
+```bash
+$ oc new-app --file=mysql-ephemeral.yml
+$ oc get pods
+NAME            READY     STATUS    RESTARTS   AGE
+mysql-1-zl2zq   1/1       Running   0          1m
+```
+
+* Create a port forwarding tunnel to the MySQL pod
+
+```bash
+$ oc port-forward mysql-1-zl2zq 13306:3306
+```
+
+* Connect to MYSQL database to verify access with the credentials defined in secret.
+
+```bash
+$ mysql -uroot -pDB-admin -h127.0.0.1 -P13306
 ```
 
 
