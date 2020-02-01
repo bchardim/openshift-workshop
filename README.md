@@ -1449,20 +1449,20 @@ $ oc adm policy add-scc-to-user anyuid -z rootuser
 
 ```bash
 $ oc login -u admin https://ocp.info.net
-$ oc new-project nginx
+$ oc new-project nginx-test
 ```
 
 * As admin associate developer iser as admin for project nginx.
 
 ```bash
-$ oc policy add-role-to-user admin developer -n nginx
+$ oc policy add-role-to-user admin developer -n nginx-test
 ```
 
 *  As a developer user, deploy to nginx an application that requires elevated privileges named nginx from nginx image.
 
 ```bash
 $ oc login -u developer
-$ oc project nginx
+$ oc project nginx-test
 $ oc new-app --name=nginx --docker-image=registry.lab.example.com/nginx:1.13.1
 $ oc get pods
 ```
@@ -1474,21 +1474,21 @@ $ oc get pods
 
 ```bash
 $ oc login -u admin
-$ oc project nginx
+$ oc project nginx-test
 $ oc create serviceaccount rootuser
 $ oc adm policy add-scc-to-user anyuid -z rootuser
 ```
 
 ```bash
 $ oc login -u developer
-$ oc project nginx
+$ oc project nginx-test
 $ oc patch dc/nginx --patch '{"spec":{"template":{"spec":{"serviceAccountName": "rootuser"}}}}'
 $ oc get pods
 NAME            READY     STATUS    RESTARTS   AGE
-nginx-2-qd87<   1/1       Running   0          2m
+nginx-2-qd87z   1/1       Running   0          2m
 ```
 
-* Test nginx project.
+* Test nginx-test project.
 
 ```bash
 $ oc expose svc nginx --hostname nginx.apps.info.net
@@ -1496,6 +1496,8 @@ $ curl -s http://nginx.apps.info.net
 ```
 
 ### Secrets Objects
+
+https://docs.openshift.com/container-platform/3.11/dev_guide/secrets.html
 
 Secret object provides a mechanism to hold sensitive information such as passwords, configuration files, and source repository credentials.
 
@@ -1550,7 +1552,7 @@ Create a MySQL database container that uses a Secret for storing database authen
 
 ```bash
 $ oc login -u developer
-$ oc new-project mysql
+$ oc new-project mysql-test
 $ less mysql.yml
 ...
 ...
@@ -1603,7 +1605,7 @@ kind: Secret
 * Deploy MYSQL database container from template.
 
 ```bash
-$ oc new-app --file=mysql-ephemeral.yml
+$ oc new-app --file=mysql.yml
 $ oc get pods
 NAME            READY     STATUS    RESTARTS   AGE
 mysql-1-zl2zq   1/1       Running   0          1m
@@ -1623,6 +1625,8 @@ $ mysql -uroot -pDB-admin -h127.0.0.1 -P13306
 
 
 ### ConfigMap Objects
+
+https://docs.openshift.com/container-platform/3.11/dev_guide/configmaps.html
 
 ConfigMaps are similar to secrets, but are designed to support the ability to work with strings that do not contain sensitive information.
 ConfigMaps provides mechanisms to inject configuration data into containers, they store granular information, such as individual properties, or detailed information, such as entire configuration files or JSON blobs.
@@ -1655,8 +1659,101 @@ env:
             key: serverAddress
 ```
 
-#### Demo: configmap.
+#### Demo: Configuring Redis with ConfigMap
 
+For a real-world example, you can configure Redis using a ConfigMap. To inject Redis with the recommended configuration for using Redis as a cache, the Redis configuration file should contain the following:
+
+maxmemory 2mb
+maxmemory-policy allkeys-lru
+
+
+* Create redis-test project
+
+```bash
+$ oc login -u developer
+$ oc new-project redis-test
+```
+
+If your configuration file is located at samples/redis/redis-config, create a ConfigMap with it:
+
+* Create the ConfigMap specifying the configuration file:
+
+```bash
+$ oc create configmap example-redis-config \
+    --from-file=samples/redis/redis-config
+```
+
+* Verify the results:
+
+```bash
+$ oc get configmap example-redis-config -o yaml
+
+apiVersion: v1
+data:
+  redis-config: |
+    maxmemory 2mb
+    maxmemory-policy allkeys-lru
+kind: ConfigMap 
+...
+```
+
+* Now, create a pod that uses this ConfigMap.
+
+```bash
+$ cat <<EOF > /tmp/redis-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+spec:
+  containers:
+  - name: redis
+    image: kubernetes/redis:v1
+    env:
+    - name: MASTER
+      value: "true"
+    ports:
+    - containerPort: 6379
+    resources:
+      limits:
+        cpu: "0.1"
+    volumeMounts:
+    - mountPath: /redis-master-data
+      name: data
+    - mountPath: /redis-master
+      name: config
+  volumes:
+    - name: data
+      emptyDir: {}
+    - name: config
+      configMap:
+        name: example-redis-config
+        items:
+        - key: redis-config
+          path: redis.conf
+EOF
+```
+
+* Create pod
+
+```bash
+$ oc create -f redis-pod.yaml
+```
+
+
+The newly-created pod has a ConfigMap volume that places the redis-config key of the example-redis-config ConfigMap into a file called redis.conf. This volume is mounted into the /redis-master directory in the Redis container, placing our configuration file at /redis-master/redis.conf, which is where the image looks for the Redis configuration file for the master.
+
+If you oc exec into this pod and run the redis-cli tool, you can check that the configuration was applied correctly:
+
+```bash
+$ oc exec -it redis redis-cli
+127.0.0.1:6379> CONFIG GET maxmemory
+1) "maxmemory"
+2) "2097152"
+127.0.0.1:6379> CONFIG GET maxmemory-policy
+1) "maxmemory-policy"
+2) "allkeys-lru"
+```
 
 
 <br><br>
