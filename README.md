@@ -1243,6 +1243,211 @@ $ oc api-resources --namespaced=true -o name
 https://docs.openshift.com/container-platform/3.11/admin_guide/manage_users.html
 
 
+### Openshift Users and Groups
+
+#### Creating a User
+
+OpenShift defaults create new users automatically when they first log in. If the user credentials are accepted by the identity provider (LDAP for example), OpenShift creates the user object (if allowed by OCP create policy).
+
+
+```bash
+$ oc create user test-user
+$ oc policy add-role-to-user edit test-user
+$ oc policy remove-role-from-user edit test-user
+```
+
+
+#### Viewing User and Identity Lists
+
+OpenShift Container Platform internally stores details like role-based access control (RBAC) information and group membership. Two object types contain user data outside the identification provider: user and identity.
+
+
+```bash
+$ oc get user
+NAME      UID                                    FULL NAME   IDENTITIES
+demo     75e4b80c-dbf1-11e5-8dc6-0e81e52cc949               htpasswd_auth:demo
+```
+
+```bash
+$ oc get identity
+NAME                  IDP NAME        IDP USER NAME   USER NAME   USER UID
+htpasswd_auth:demo    htpasswd_auth   demo            demo        75e4b80c-dbf1-11e5-8dc6-0e81e52cc949
+```
+
+
+#### Creating Groups
+
+Users can be organized into one or more groups made up from a set of users. Groups are useful for managing many users at one time, such as for authorization policies, or to grant permissions to multiple users at once.
+
+If your organization is using LDAP, you can synchronize any LDAP records to OpenShift Container Platform so that you can configure groups on one place. This presumes that information about your users is in an LDAP server.
+
+https://docs.openshift.com/container-platform/3.11/install_config/syncing_groups_with_ldap.html#install-config-syncing-groups-with-ldap
+
+* To create a new group and asign john and betty to it:
+
+```bash
+$ oc adm groups new west john betty
+```
+
+```bash
+$ oc get groups
+NAME      USERS
+west      john, betty
+```
+
+
+### Cluster Administration
+
+Cluster administrators can create projects and delegate administrative rights for the project to any user. In OpenShift Container Platform, projects are used to group and isolate related objects.
+Administrators can apply roles to users and groups that allow or restrict their ability to create projects. Roles can be assigned prior to a user's initial login.
+
+* Restricting project creation
+
+```bash
+$ oc adm policy remove-cluster-role-from-group self-provisioner system:authenticated system:authenticated:oauth
+```
+
+* Granting project creation
+
+```bash
+$ oc adm policy add-cluster-role-to-group self-provisioner system:authenticated system:authenticated:oauth
+```
+
+### Creating a Project
+
+For users granted with project creation permission they can create a project named testme:
+
+```bash
+$ oc new-project testme --description="testme description" --display-name="testme"
+```
+
+
+### Role Bindings
+
+Adding (binding) a role to users or groups gives the user or group the  access granted by the role.
+
+
+* Cluster admin role
+
+```bash
+master$ oc adm policy add-cluster-role-to-user cluster-admin admin
+```
+
+* Granting developer user read-only access to information about the cluster
+
+```bash
+$ oc adm policy add-cluster-role-to-user cluster-status developer
+```
+
+* Restricting project creation
+
+```bash
+$ oc adm policy remove-cluster-role-from-group self-provisioner system:authenticated system:authenticated:oauth
+```
+
+* Granting project creation
+
+```bash
+$ oc adm policy add-cluster-role-to-group self-provisioner system:authenticated system:authenticated:oauth
+```
+
+* Granting admin role on project testme
+
+```bash
+$ oc adm policy add-role-to-user admin developer -n testme
+```
+
+* Granting developer role on project testme
+
+```bash
+$ oc adm policy add-role-to-user edit developer -n testme
+```
+
+* Granting developer user read-only access to project testme
+
+```bash
+$ oc adm policy add-role-to-user basic-user developer -n testme
+```
+
+
+#### Reading Cluster Policies
+
+```bash
+$ oc describe clusterPolicyBindings :default
+```
+
+#### Reading Local Policies
+
+```bash
+$ oc describe policyBindings :default
+```
+
+
+### Security Context Constraints (SCCs)
+
+OpenShift provides security context constraints (SCCs) which control the actions a pod can perform and what resources can access.
+
+
+* List SCCs
+
+```bash
+$ oc get scc
+```
+
+
+* Get SCC description
+
+```bash
+$ oc describe scc sccname
+```
+
+* Grant SCC to user/group 
+
+```bash
+$ oc adm policy add-scc-to-user sccname username
+$ oc adm policy add-scc-to-group sccname groupname
+```
+
+* Remove SCC to user/group
+
+```bash
+$ oc adm policy remove-scc-from-user sccname username
+$ oc adm policy remove-scc-from-group sccname groupname
+```
+
+### Service Account
+
+Service accounts provide a way to control API access without sharing a user’s credentials. For an application that requires a capability not granted by the restricted SCC an specific service account and added it to the appropriate SCC.
+
+
+Deploying an app that requires elevated privileges by default is not supported by OpenShift. If this use case is really needed  a service account can be created, added to deployment configuration, and then add the service account to an SCC, such as anyuid, which meets the requirements to run as root user in the container.
+
+
+* Create a new service account named rootuser.
+
+```bash
+$ oc create serviceaccount rootuser
+```
+
+* Modify the deployment configuration for the application.
+
+```bash
+$ oc patch dc/testme --patch '{"spec":{"template":{"spec":{"serviceAccountName": "rootuser"}}}}'
+```
+
+* Add rootuser service account to the anyuid SCC to run as the root user in the container.
+
+```bash
+$ oc adm policy add-scc-to-user anyuid -z rootuser
+```
+
+
+### Demo
+
+...
+
+
+
 <br><br>
 ## Openshift 3 Logging with ELK
 
