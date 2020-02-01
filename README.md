@@ -1520,7 +1520,7 @@ Allows a secret to be mounted by a pod running under a specific service account
 * Create a pod that consumes the secret.
 
 
-### Expose secrets to pods
+#### Expose secrets to pods
 
 Secrets can be mounted as data volumes or exposed as environment variables to be used by a container in a pod.
 Create a secret named secret-demo, that defines the key username and set the key's value to the user user-demo:
@@ -1542,7 +1542,7 @@ env:
 
 
 
-### Demo: Protecting database password with secret.
+#### Demo: Protecting database password with secret.
 
 Create a MySQL database container that uses a Secret for storing database authentication credentials.
 
@@ -1655,7 +1655,7 @@ env:
             key: serverAddress
 ```
 
-### Demo: configmap.
+#### Demo: configmap.
 
 
 
