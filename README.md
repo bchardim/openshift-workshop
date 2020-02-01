@@ -1443,7 +1443,7 @@ $ oc adm policy add-scc-to-user anyuid -z rootuser
 ```
 
 
-### Demo: Deploy Privileged Pod
+### Demo: Deploy privileged pod.
 
 * As cluster admin create nginx project. 
 
@@ -1541,40 +1541,8 @@ env:
 ```
 
 
-### ConfigMap Objects
 
-ConfigMaps are similar to secrets, but are designed to support the ability to work with strings that do not contain sensitive information.
-ConfigMaps provides mechanisms to inject configuration data into containers, they store granular information, such as individual properties, or detailed information, such as entire configuration files or JSON blobs.
-
-#### Creating a ConfigMap
-
-* Creates a ConfigMap that assigns the IP address 172.30.20.10 to the ConfigMap key named serverAddr.
-
-```bash
-$ oc create configmap special-config --from-literal=serverAddr=172.30.20.10
-```
-
-```bash
-$ oc get configmaps special-config -o yaml
-apiVersion: v1
-data:
-  key1: serverAddress=172.20.30.40
-kind: ConfigMap
-...
-```
-
-* Populate the environment variable APISERVER inside a pod definition from the config map.
-
-```bash
-env:
-  - name: APISERVER
-     valueFrom:
-        configMapKeyRef:
-            name: special-config
-            key: serverAddress
-```
-
-### Demo: Protecting Database Password
+### Demo: Protecting database password with secret.
 
 Create a MySQL database container that uses a Secret for storing database authentication credentials.
 
@@ -1652,6 +1620,43 @@ $ oc port-forward mysql-1-zl2zq 13306:3306
 ```bash
 $ mysql -uroot -pDB-admin -h127.0.0.1 -P13306
 ```
+
+
+### ConfigMap Objects
+
+ConfigMaps are similar to secrets, but are designed to support the ability to work with strings that do not contain sensitive information.
+ConfigMaps provides mechanisms to inject configuration data into containers, they store granular information, such as individual properties, or detailed information, such as entire configuration files or JSON blobs.
+
+#### Creating a ConfigMap
+
+* Creates a ConfigMap that assigns the IP address 172.30.20.10 to the ConfigMap key named serverAddr.
+
+```bash
+$ oc create configmap special-config --from-literal=serverAddr=172.30.20.10
+```
+
+```bash
+$ oc get configmaps special-config -o yaml
+apiVersion: v1
+data:
+  key1: serverAddress=172.20.30.40
+kind: ConfigMap
+...
+```
+
+* Populate the environment variable APISERVER inside a pod definition from the config map.
+
+```bash
+env:
+  - name: APISERVER
+     valueFrom:
+        configMapKeyRef:
+            name: special-config
+            key: serverAddress
+```
+
+### Demo: configmap.
+
 
 
 <br><br>
