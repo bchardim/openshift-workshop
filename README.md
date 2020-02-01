@@ -1676,11 +1676,21 @@ $ oc new-project redis-test
 
 If your configuration file is located at samples/redis/redis-config, create a ConfigMap with it:
 
+
+* Create redis-config file to be used in configmap.
+
+```bash
+$ cat <<EOF > /tmp/redis-config
+maxmemory 2mb
+maxmemory-policy allkeys-lru
+EOF
+```
+
 * Create the ConfigMap specifying the configuration file:
 
 ```bash
 $ oc create configmap example-redis-config \
-    --from-file=samples/redis/redis-config
+    --from-file=/tmp/redis-config
 ```
 
 * Verify the results:
@@ -1738,6 +1748,7 @@ EOF
 
 ```bash
 $ oc create -f redis-pod.yaml
+$ oc get pods -w
 ```
 
 
