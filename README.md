@@ -1690,8 +1690,7 @@ EOF
 * Create the ConfigMap specifying the configuration file:
 
 ```bash
-$ oc create configmap example-redis-config \
-    --from-file=/tmp/redis-config
+$ oc create configmap example-redis-config --from-file=/tmp/redis-config
 ```
 
 * Verify the results:
@@ -1766,6 +1765,119 @@ $ oc exec -it redis redis-cli
 1) "maxmemory-policy"
 2) "allkeys-lru"
 ```
+
+
+### Limiting Resource Usage
+
+Pod definition can include both resource requests and resource limits:
+
+* Resource requests
+
+    Used for scheduling, indicate that a pod is not able to run with less than the specified amount of compute resources.
+
+* Resource limits
+
+    Used to prevent a pod from using up all compute resources from a node.
+
+
+#### Configuring Quotas
+
+OpenShift can enforce quotas that track and limit the use of two kinds of resources:
+
+* Object counts
+  The number of Kubernetes resources, such as pods, services, and routes.
+
+* Compute resources
+  The number of physical or virtual hardware resources, such as CPU, memory, and storage capacity.
+
+
+```bash
+$ oc login -u developer
+$ oc project quota-test
+
+$ cat <<EOF > /tmp/quota-test.yml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota-test
+spec:
+  hard:
+    services: "2"
+    cpu: "500m"
+    memory: "1Gi"
+EOF
+
+$ oc create -f /tmp/quota-test.yml
+$ oc get resourcequota
+$ oc describe resourcequota quota-test
+```
+
+
+#### Limit Ranges
+
+LimitRange resource (or limit)  defines the default, minimum and maximum values for compute resource requests and limits for a single pod or container defined inside the project.
+A resource request or limit for a pod is the sum of its containers.
+
+Consider that a limit range defines valid ranges and default values for a single pod, while a resource quota defines only top values for the sum of all pods in a project.
+
+
+```bash
+$ oc login -u developer
+$ oc project limits-test
+
+$ cat <<EOF > /tmp/limits-test.yml
+apiVersion: "v1"
+kind: "LimitRange"
+metadata:
+  name: "limits-test"
+spec:
+  limits:
+    - type: "Pod"
+      max:
+        cpu: "1"
+        memory: "512Mi"
+      min:
+        cpu: "100m"
+        memory: "20Mi"
+    - type: "Container"
+      default:
+        cpu: "1"
+        memory: "512Mi"
+EOF
+
+$ oc create -f limits-test.yml
+$ oc get limitranges
+$ oc describe limitranges limits-test
+```
+
+
+#### Configuring quotas to multiple projects
+
+ClusterResourceQuota resource is created at cluster level and specifies resource constraints that apply to multiple projects.
+
+* Create a cluster resource quota for all projects owned by the 'developer' user:
+
+```bash
+$ oc login -u admin
+$ oc create clusterquota user-developer \
+--project-annotation-selector openshift.io/requester=developer \
+--hard pods=10 \
+--hard secrets=5
+```
+
+
+* Create a cluster resource quota for all projects that have the 'environment=dev' label:
+
+```bash
+$ oc create clusterquota env-dev \
+--project-label-selector environment=dev \
+--hard pods=30 \
+--hard services=10
+```
+
+### Demo: Limits and Quota
+
+
 
 
 <br><br>
