@@ -1794,7 +1794,7 @@ OpenShift can enforce quotas that track and limit the use of two kinds of resour
 
 
 ```bash
-$ oc login -u developer
+$ oc login -u admin
 $ oc project quota-test
 
 $ cat <<EOF > /tmp/quota-test.yml
@@ -1943,6 +1943,7 @@ $ oc describe quota
 ```bash
 $ oc login -u admin
 $ oc new-project quota-dev
+$ oc adm policy add-role-to-user admin developer -n quota-dev
 
 $ cat <<EOF > /tmp/limits.yml
 apiVersion: "v1"
@@ -1986,10 +1987,15 @@ $ oc describe quota
 ```bash
 $ oc login -u developer
 $ oc project quota-dev
-$ oc new-app --name=hello --docker-image=registry.lab.example.com/openshift/hello-openshift
+
+$ oc new-app --name=hello registry.access.redhat.com/rhscl/httpd-24-rhel7~https://github.com/openshift/httpd-ex.git
+$ oc expose svc hello --hostname=hello.apps.info.net
+$ curl -s hello.apps.info.net | grep Welcome
+
 $ oc describe quota
 $ oc scale dc hello --replicas=4
 $ oc get pod -o wide
+
 $ oc describe dc hello | grep Replicas
 $ oc get events | grep -i error
 $ oc scale dc hello --replicas=1
