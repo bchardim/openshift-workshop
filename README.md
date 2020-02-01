@@ -1443,7 +1443,7 @@ $ oc adm policy add-scc-to-user anyuid -z rootuser
 ```
 
 
-### Demo: Deploy privileged pod.
+### LAB: Deploy privileged pod.
 
 * As cluster admin create nginx project. 
 
@@ -1544,7 +1544,7 @@ env:
 
 
 
-#### Demo: Protecting database password with secret.
+#### LAB: Protecting database password with secret.
 
 Create a MySQL database container that uses a Secret for storing database authentication credentials.
 
@@ -1659,7 +1659,7 @@ env:
             key: serverAddress
 ```
 
-#### Demo: Configuring Redis with ConfigMap
+#### LAB: Configuring Redis with ConfigMap
 
 For a real-world example, you can configure Redis using a ConfigMap. To inject Redis with the recommended configuration for using Redis as a cache, the Redis configuration file should contain the following:
 
@@ -1937,7 +1937,7 @@ $ oc get quota
 
 
 
-### Demo: Limits and Quota
+#### LAB: Limits and Quota
 
 
 
