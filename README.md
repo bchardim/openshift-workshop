@@ -2300,7 +2300,8 @@ https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 c7$ sysctl -w net.ipv4.ip_forward=1
 c7$ yum -y upgrade
 c7$ yum -y install git docker vim centos-release-openshift-origin311
-c7$ yum -y install origin-clients   
+c7$ yum -y install origin-clients
+c7$ systemctl start docker && systemctl enable docker 
 ```
 
 * Configure Docker daemon 
@@ -2347,6 +2348,7 @@ c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --ro
 
 ```bash
 c7$ oc login -u system:admin
+c7$ oc adm policy add-cluster-role-to-user cluster-admin admin
 c7$ oc get nodes
 
 laptop$ browse https://192.168.122.95:8443/console
@@ -2361,5 +2363,16 @@ laptop$ browse https://192.168.122.95:8443/console
 ```bash
 c7$ oc cluster down
 ```
+
+
+## Openshift 3 CLI
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/cli_reference/index.html
+
+
+
+
 
 
