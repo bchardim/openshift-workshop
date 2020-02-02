@@ -14,7 +14,16 @@ https://docs.openshift.com/container-platform/3.11/welcome/index.html
 <br><br>
 ## Openshift 3 Architecture
 
-The following workshop applies for a test Openshift 3.11 cluster using OCS 3.11 with gluster in independent mode.
+The following workshop applies for a test Red Hat Openshift Container Platform  3.11 cluster using OCS 3.11 with gluster in independent mode.
+Red Hat OpenShift Container Platform is a container application platform based on Red Hat Enterprise Linux, containers, and Kubernetes:
+
+* Allows developers to focus on source code and rely on the container platform infrastructure to build and deploy containers to run applications.
+
+* Employs master servers that manage node servers that run applications as containers.
+
+* Provides additional authentication, security, scheduling, networking, storage, logging, metrics, and application life-cycle management over default Kubernetes features.
+
+* Provides built-in high availability (HA) for masters and pods.
 
 ![alt text]( images/arch-independent.png "OCP Architecture")  
 
@@ -2072,7 +2081,25 @@ https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logg
 
 ### Architecture
 
-The following is the standard ELK architecture for Openshift 3.11 clusterc used for aggregate logs.
+The following is the standard ELK architecture for Openshift 3.11 cluster used for aggregate logs.
+As an OpenShift Container Platform cluster administrator, you can deploy the EFK stack to aggregate logs for a range of OpenShift Container Platform services. Application developers can view the logs of the projects for which they have view access. The EFK stack aggregates logs from hosts and applications, whether coming from multiple containers or even deleted pods.
+
+The EFK stack is a modified version of the ELK stack and is comprised of:
+
+* Elasticsearch
+
+  An object store where all logs are stored.
+
+* Fluentd
+  
+  Gathers logs from nodes and feeds them to Elasticsearch.
+
+* Kibana
+
+  A web UI for Elasticsearch.
+
+After deployment in a cluster, the stack aggregates logs from all nodes and projects into Elasticsearch, and provides a Kibana UI to view any logs. Cluster administrators can view all logs, but application developers can only view logs for projects they have permission to view. The stack components communicate securely.
+
 
 ![alt text]( images/elk.png "OCP ELK Architecture")
 
@@ -2117,7 +2144,22 @@ https://docs.openshift.com/container-platform/3.11/install_config/cluster_metric
 
 ### Architecture
 
-The following is the standard metrics architecture for Openshift 3.11 cluster based on Heapster and Hawkular.
+The following is the standard metrics architecture for Openshift 3.11 cluster based on Heapster, Hawkular and Cassandra.
+Red Hat OpenShift Container Platform provides the optional Metrics subsystem that performs the collection and long-term storage of performance metrics about cluster nodes and containers.
+The Metrics subsystem is composed of three main components that run as containers in the OpenShift cluster:
+
+* Heapster
+
+Collects metrics from OpenShift nodes and containers running on each node. The Kubernetes autoscaler needs Heapster to work.
+
+* Hawkular Metrics
+
+Stores the metrics and provides querying capabilities. The OpenShift web console needs Hawkular to display performance graphics for a project.
+
+* Cassandra
+
+Is the database used by Hawkular to store metrics.
+
 
 ![alt text]( images/metrics.png "OCP Metrics Architecture")
 
@@ -2153,6 +2195,33 @@ https://docs.openshift.com/container-platform/3.11/install_config/prometheus_clu
 ### Architecture
 
 The following is the standard monitoring architecture for Openshift 3.11 cluster based on Prometheus and Grafana.
+OpenShift Container Platform ships with a pre-configured and self-updating monitoring stack that is based on the Prometheus open source project and its wider eco-system. It provides monitoring of cluster components and ships with a set of alerts to immediately notify the cluster administrator about any occurring problems and a set of Grafana dashboards.
+
+In addition to Prometheus and Alertmanager, OpenShift Container Platform Monitoring also includes node-exporter and kube-state-metrics. Node-exporter is an agent deployed on every node to collect metrics about it. The kube-state-metrics exporter agent converts Kubernetes objects to metrics consumable by Prometheus.
+
+The targets monitored as part of the cluster monitoring are:
+
+* Prometheus itself
+
+* Prometheus-Operator
+
+* cluster-monitoring-operator
+
+* Alertmanager cluster instances
+
+* Kubernetes apiserver
+
+* kubelets (the kubelet embeds cAdvisor for per container metrics)
+
+* kube-controllers
+
+* kube-state-metrics
+
+* node-exporter
+
+* etcd (if etcd monitoring is enabled)
+
+
 
 ![alt text]( images/prometheus.png "OCP Monitoring Architecture")
 
@@ -2198,10 +2267,6 @@ grafana             grafana-openshift-monitoring.apps.info.net ... 1 more       
 prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more                prometheus-k8s      web       reencrypt     None
 
 ```
-
-
-
-
 
 <br><br>
 ## Using Minishift
