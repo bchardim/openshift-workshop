@@ -2488,6 +2488,7 @@ $ oc export svc,dc docker-registry --as-template=docker-registry-file
 ```bash
 $ oc cancel-build bc/hello
 $ oc start-build bc/hello
+$ oc logs -f bc/hello
 ```
 
 ### Manage Deployment Config
@@ -2498,6 +2499,8 @@ $ oc rollout cancel dc/hello
 $ oc rollout pause dc/hello
 $ oc rollout resume dc/hello
 $ oc rollout latest dc/hello
+
+$ oc logs -f dc/hello
 $ oc scale dc/hello --replicas=5
 ```
 
