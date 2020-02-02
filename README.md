@@ -16,7 +16,38 @@ https://docs.openshift.com/container-platform/3.11/welcome/index.html
 
 The following workshop applies for a test Openshift 3.11 cluster using OCS 3.11 with gluster in independent mode.
 
-![alt text]( images/arch-independent.png "Architecture")  
+![alt text]( images/arch-independent.png "OCP Architecture")  
+
+```bash
+$ oc get nodes -o wide
+NAME             STATUS    ROLES           AGE       VERSION           INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION               CONTAINER-RUNTIME
+srv01.info.net   Ready     master          21h       v1.11.0+d4cacc0   10.0.92.35    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv02.info.net   Ready     master          21h       v1.11.0+d4cacc0   10.0.92.34    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv03.info.net   Ready     master          21h       v1.11.0+d4cacc0   10.0.91.115   <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv07.info.net   Ready     compute         20h       v1.11.0+d4cacc0   10.0.91.54    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv08.info.net   Ready     compute         20h       v1.11.0+d4cacc0   10.0.92.13    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv09.info.net   Ready     compute         20h       v1.11.0+d4cacc0   10.0.92.1     <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv10.info.net   Ready     infra,ingress   20h       v1.11.0+d4cacc0   10.0.91.117   <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv11.info.net   Ready     infra,ingress   20h       v1.11.0+d4cacc0   10.0.91.79    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv12.info.net   Ready     infra,ingress   20h       v1.11.0+d4cacc0   10.0.91.56    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv13.info.net   Ready     infra,ingress   20h       v1.11.0+d4cacc0   10.0.91.113   <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv14.info.net   Ready     infra,ingress   20h       v1.11.0+d4cacc0   10.0.92.58    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+
+$ oc get pods -n default -o wide
+NAME                       READY     STATUS    RESTARTS   AGE       IP            NODE             NOMINATED NODE
+docker-registry-1-8kckj    1/1       Running   0          20h       10.254.10.3   srv11.info.net   <none>
+registry-console-1-6c9zp   1/1       Running   0          20h       10.254.2.7    srv02.info.net   <none>
+router-apps-1-95fsf        1/1       Running   0          20h       10.0.91.79    srv11.info.net   <none>
+router-apps-1-h79gd        1/1       Running   0          20h       10.0.91.113   srv13.info.net   <none>
+router-shop-1-lct4p        1/1       Running   0          20h       10.0.91.113   srv13.info.net   <none>
+router-shop-1-pqq88        1/1       Running   0          20h       10.0.92.58    srv14.info.net   <none>
+
+$ oc get sc
+NAME                          PROVISIONER                          AGE
+glusterfs-storage (default)   kubernetes.io/glusterfs              20h
+glusterfs-storage-block       gluster.org/glusterblock-glusterfs   20h
+```
+
 
 <br><br>
 ## Openshift 3 Upgrade
@@ -2039,6 +2070,47 @@ $ oc scale dc hello --replicas=1
 https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logging.html
 
 
+### Architecture
+
+![alt text]( images/elk.png "OCP ELK Architecture")
+
+
+
+```bash
+$ oc login -u admin
+$ oc project openshift-logging
+
+$ oc get pods -o wide
+NAME                                      READY     STATUS      RESTARTS   AGE       IP            NODE             NOMINATED NODE
+logging-curator-1580580000-phkdp          0/1       Completed   0          19h       10.254.6.5    srv13.info.net   <none>
+logging-es-data-master-x1ixxvdi-1-25rtg   2/2       Running     0          20h       10.254.12.6   srv10.info.net   <none>
+logging-fluentd-4nnj6                     1/1       Running     0          20h       10.254.18.5   srv14.info.net   <none>
+logging-fluentd-6h5wt                     1/1       Running     0          20h       10.254.8.5    srv12.info.net   <none>
+logging-fluentd-866kl                     1/1       Running     0          20h       10.254.6.4    srv13.info.net   <none>
+logging-fluentd-86dkr                     1/1       Running     0          20h       10.254.10.9   srv11.info.net   <none>
+logging-fluentd-9kdt5                     1/1       Running     0          20h       10.254.4.9    srv01.info.net   <none>
+logging-fluentd-bdb94                     1/1       Running     0          20h       10.254.12.5   srv10.info.net   <none>
+logging-fluentd-pvdfq                     1/1       Running     0          20h       10.254.16.3   srv08.info.net   <none>
+logging-fluentd-rh6b8                     1/1       Running     0          20h       10.254.20.2   srv07.info.net   <none>
+logging-fluentd-sp4dn                     1/1       Running     0          20h       10.254.2.10   srv02.info.net   <none>
+logging-fluentd-x2t7q                     1/1       Running     0          20h       10.254.14.2   srv09.info.net   <none>
+logging-fluentd-zr65r                     1/1       Running     0          20h       10.254.0.12   srv03.info.net   <none>
+logging-kibana-1-fdvrk                    2/2       Running     0          20h       10.254.10.8   srv11.info.net   <none>
+
+$ oc get pvc
+NAME           STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS              AGE
+logging-es-0   Bound     pvc-4d1913ee-450f-11ea-9a76-fa163ec1fa14   5Gi        RWO            glusterfs-storage-block   20h
+
+$ oc get routes
+NAME             HOST/PORT                          PATH      SERVICES         PORT      TERMINATION          WILDCARD
+logging-kibana   logging.apps.info.net ... 1 more             logging-kibana   <all>     reencrypt/Redirect   None
+```
+
+
+
+
+
+
 <br><br>
 ## Openshift 3 Monitoring with Prometheus and Grafana
 
@@ -2046,6 +2118,7 @@ https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logg
 
 https://docs.openshift.com/container-platform/3.11/install_config/prometheus_cluster_monitoring.html
 
+### Architecture
 
 
 <br><br>
@@ -2053,6 +2126,6 @@ https://docs.openshift.com/container-platform/3.11/install_config/prometheus_clu
 
 ### Official Documentation
 
-https://access.redhat.com/documentation/en-us/red_hat_container_development_kit/3.11/html-single/getting_started_guide/index
+https://access.redhat.com/documentation/en-us/red_hat_container_development_kit/3.11/html-single/getting_started_guide/index <br>
 https://www.redhat.com/sysadmin/learn-openshift-minishift
 
