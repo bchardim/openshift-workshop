@@ -2388,5 +2388,174 @@ laptop$ browse http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 ### Official Documentation
 
 https://docs.openshift.com/container-platform/3.11/cli_reference/index.html
+https://design.jboss.org/redhatdeveloper/marketing/openshift_cheatsheet/cheatsheet/images/openshift_cheat_sheet_r1v1.pdf
+
+
+### oc help
+
+```bash
+$ oc types 
+```
+
+### App deploy
+
+```bash
+$ oc new-app -h
+```
+
+* Deploy app from image stream
+
+```bash
+$ oc get is
+$ oc new-app --name=sample -i sample-imagestream
+```
+
+* Deploy app from git repo
+
+```bash
+$ oc new-app --name=hello -i php:5.6 http://github.com/user/php-helloworld
+```
+
+* Deploy app from private registry
+
+```bash
+$ oc new-app --name=hello --docker-image=myregistry.example.com/node-hello 
+$ oc new-app --name=hello myregistry.example.com/node-hello
+```
+
+* Deploy app from private registry using environment variables
+
+```bash
+$ oc new-app --name=mysqldb --docker-image=myregistry.example.com/rhscl/mysql-57-rhel7 -e MYSQL_USER=sales -e MYSQL_PASSWORD=admin00 -e MYSQL_DATABASE=customers
+```
+
+* Deploy app from template file
+
+```bash
+$ oc new-app --name=mysql --file=mysql-ephemeral.yml
+```
+
+* Deploy app from imported template
+
+```bash
+$ oc new-app --template=customer -p APPLICATION_DOMAIN=customer.apps.lab.example.com [-p PARAM2=value2 ...]
+```
+
+* Deploy app from local source code
+
+```bash
+$ oc new-app /home/demo/docker/hello --strategy=docker
+```
+
+### Docker Build
+
+```bash
+$ git clone http://github.com/user/node-hello
+$ cd node-hello
+$ docker build -t node-hello:latest .
+$ docker images
+$ docker tag a9861ee36be4 registry.lab.example.com/project/node-hello:latest
+$ docker push myregistry.example.com/node-hello:latest
+
+$ oc new-app --name=hello --docker-image=myregistry.example.com/project/node-hello:latest
+```
+
+
+### Pod environment
+
+```bash
+$ oc env pod router-1-24zos --list
+ROUTER_SERVICE_NAME=router
+ROUTER_SERVICE_NAMESPACE=default
+ROUTER_SUBDOMAIN=
+STATS_PASSWORD=ThqxnWjdn5
+STATS_PORT=1936
+STATS_USERNAME=admin
+```
+
+### Importing and exporting resources
+
+```bash
+$ oc get all
+...
+$ oc export pod docker-registry-1-n2019 < -o json >
+...
+$ oc export svc,dc docker-registry --as-template=docker-registry-file
+```
+
+### Manage Build Config
+
+```bash
+$ oc cancel-build bc/hello
+$ oc start-build bc/hello
+```
+
+### Manage Deployment Config
+
+```bash
+$ oc get dc
+$ oc rollout cancel dc/hello
+$ oc rollout pause dc/hello
+$ oc rollout resume dc/hello
+$ oc rollout latest dc/hello
+$ oc scale dc/hello --replicas=5
+```
+
+### Troubleshooting
+
+* 'oc rsh' command opens a remote shell session to a container. This is useful for logging in and investigating issues in a running container.
+
+```bash
+$ oc rsh <pod>
+```
+
+* 'oc rsync' command copies the contents to or from a directory in a running pod. If a pod has multiple containers, you can specify the container ID using the -c option
+
+```bash
+$ oc rsync <pod>:<pod_dir> <local_dir> -c <container>
+$ oc rsync <local_dir> <pod>:<pod_dir> -c <container>
+```
+
+* 'oc port-forward' command to forward one or more local ports to a pod.
+
+```bash
+$ oc port-forward <pod> [<local_port>:]<remote_pod_port>
+$ oc port-forward <pod> 13306:3306
+```
+
+* The 'oc logs' command retrieves the log output for a specific build, deployment, or pod.
+
+```bash
+$ oc logs -f pod
+$ oc logs -f bc/build-name
+```
+
+* Events are useful during troubleshooting.
+
+```bash
+$ oc get events [-n <project>]
+```
+
+* Failures in Scheduling Pods
+
+```bash
+$ oc get events --sort-by='{.lastTimestamp}'
+$ oc get all
+$ oc logs -f pod_name
+$ oc describe pod pod_name
+$ oc logs -f bc/build-name
+$ oc status -v
+```
+
+* Master and Node Service Failures
+
+```bash
+$ oc get nodes
+$ oc describe node node1.lab.example.com
+
+[root@master|node ~]# systemctl list-units --type=services | grep -i openshift
+[root@master|node ~]# systemctl status atomic-openshift-master-controllers atomic-openshift-master-api atomic-openshift-node etcd docker -l
+[root@master|node ~]# journalctl -u atomic-openshift-master-controllers
+```
 
 
