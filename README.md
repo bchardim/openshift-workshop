@@ -11,7 +11,7 @@ Day 2 Operations for Openshift 3
 
 https://docs.openshift.com/container-platform/3.11/welcome/index.html   
 
-<br><br>
+<br><br><br>
 ## Openshift 3 Architecture
 
 The following workshop applies for a test Red Hat Openshift Container Platform  3.11 cluster using OCS 3.11 with gluster in independent mode.
@@ -58,7 +58,7 @@ glusterfs-storage-block       gluster.org/glusterblock-glusterfs   20h
 ```
 
 
-<br><br>
+<br><br><br>
 ## Openshift 3 Upgrade
 
 ### Official Documentation
@@ -126,7 +126,7 @@ $ oc get -n default dc/router -o json | grep \"image\"
 * Run Openshift 3 HealthCheck procedure (see next section).
 
 
-<br><br>
+<br><br><br>
 ## Openshift 3 HealthCheck
 
 ### Official Documentation
@@ -642,7 +642,7 @@ $ ansible -i hosts --limit nodes  -m shell -a "/usr/bin/openshift version" -u qu
 
 
 
-<br><br>
+<br><br><br>
 ## Openshift 3 Certificates
 
 ### Official Documentation
@@ -760,7 +760,7 @@ $ sudo docker push https://docker-registry-default.apps.info.net/httpd-test/ruby
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts /usr/share/ansible/openshift-ansible/playbooks/certificate_expiry/easy-mode.yaml -e openshift_certificate_expiry_html_report_path=/tmp/cert-expiry-report.html -e openshift_certificate_expiry_json_results_path=/tmp/cert-expiry-report.json -e openshift_is_atomic=false -e ansible_distribution=RedHat
 ```
 
-<br><br>
+<br><br><br>
 ## Scaling and Performance
 
 ### Official Documentation
@@ -930,7 +930,8 @@ More info:
 
 https://docs.openshift.com/container-platform/3.11/scaling_performance/managing_hugepages.html
 
-<br><br>
+
+<br><br><br>
 ## Openshift 3 Storage
 
 ### Official Documentation
@@ -1007,7 +1008,7 @@ $$ heketi-cli topology info
 ```
 
 
-<br><br>
+<br><br><br>
 ## Openshift 3 Backup
 
 ### Official Documentation
@@ -1276,6 +1277,7 @@ done
 $ oc api-resources --namespaced=true -o name
 ```
 
+<br><br><br>
 ## Openshift 3 Resources 
 
 ### Official Documentation
@@ -2071,7 +2073,7 @@ $ oc scale dc hello --replicas=1
 ```
 
 
-<br><br>
+<br><br><br>
 ## Openshift 3 Logging with ELK
 
 ### Official Documentation
@@ -2135,7 +2137,7 @@ NAME             HOST/PORT                          PATH      SERVICES         P
 logging-kibana   logging.apps.info.net ... 1 more             logging-kibana   <all>     reencrypt/Redirect   None
 ```
 
-<br><br>
+<br><br><br>
 ## Openshift 3 Metrics
 
 ### Official Documentation
@@ -2185,7 +2187,7 @@ hawkular-metrics   metrics.apps.info.net ... 1 more             hawkular-metrics
 
 
 
-<br><br>
+<br><br><br>
 ## Openshift 3 Monitoring with Prometheus and Grafana
 
 ### Official Documentation
@@ -2267,7 +2269,7 @@ grafana             grafana-openshift-monitoring.apps.info.net ... 1 more       
 prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more                prometheus-k8s      web       reencrypt     None
 ```
 
-<br><br>
+<br><br><br>
 ## Local Cluster Management - oc cluster up
 
 ### Official Documentation
@@ -2380,15 +2382,11 @@ laptop$ vi /etc/hosts
 laptop$ browse http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 ```
 
-
+<br><br><br>
 ## Openshift 3 CLI
 
 ### Official Documentation
 
 https://docs.openshift.com/container-platform/3.11/cli_reference/index.html
-
-
-
-
 
 
