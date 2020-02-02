@@ -2556,9 +2556,9 @@ $ oc status -v
 $ oc get nodes
 $ oc describe node node1.lab.example.com
 
-[root@master|node ~]# systemctl list-units --type=services | grep -i openshift
-[root@master|node ~]# systemctl status atomic-openshift-master-controllers atomic-openshift-master-api atomic-openshift-node etcd docker -l
-[root@master|node ~]# journalctl -u atomic-openshift-master-controllers
+[root@master|node ~]$ systemctl list-units --type=services | grep -i openshift
+[root@master|node ~]$ systemctl status atomic-openshift-master-controllers atomic-openshift-master-api atomic-openshift-node etcd docker -l
+[root@master|node ~]$ journalctl -u atomic-openshift-master-controllers
 ```
 
 
