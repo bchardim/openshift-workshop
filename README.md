@@ -2109,6 +2109,41 @@ logging-kibana   logging.apps.info.net ... 1 more             logging-kibana   <
 ```
 
 <br><br>
+## Openshift 3 Metrics
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/install_config/cluster_metrics.html
+
+### Architecture
+
+The following is the standard metrics architecture for Openshift 3.11 cluster based on Heapster and Hawkular.
+
+![alt text]( images/metrics.png "OCP Metrics Architecture")
+
+```bash
+$ oc login -u admin
+$ oc project openshift-infra
+
+$ oc get pods -o wide
+NAME                            READY     STATUS      RESTARTS   AGE       IP             NODE             NOMINATED NODE
+hawkular-cassandra-1-g2bsm      1/1       Running     0          21h       10.254.18.7    srv14.info.net   <none>
+hawkular-metrics-ks8k6          1/1       Running     0          21h       10.254.10.12   srv11.info.net   <none>
+hawkular-metrics-schema-zw268   0/1       Completed   0          21h       10.254.4.12    srv01.info.net   <none>
+heapster-tcl9q                  1/1       Running     0          21h       10.254.8.6     srv12.info.net   <none>
+
+$ oc get pvc
+NAME                  STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
+metrics-cassandra-1   Bound     pvc-2ae41313-4510-11ea-9a76-fa163ec1fa14   3Gi        RWO            glusterfs-storage   21h
+
+$ oc get routes 
+NAME               HOST/PORT                          PATH      SERVICES           PORT      TERMINATION   WILDCARD
+hawkular-metrics   metrics.apps.info.net ... 1 more             hawkular-metrics   <all>     reencrypt     None
+```
+
+
+
+<br><br>
 ## Openshift 3 Monitoring with Prometheus and Grafana
 
 ### Official Documentation
