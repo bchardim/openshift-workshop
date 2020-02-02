@@ -2356,12 +2356,27 @@ laptop$ browse https://192.168.122.95:8443/console
 
 * Test Openshit local cluster
 
+c7$ oc login -u developer
+c7$ oc ruby-ex
+c7$ oc new-app centos/ruby-25-centos7~https://github.com/sclorg/ruby-ex.git
+c7$ oc get pods
+c7$ oc logs -f ruby-ex-1-build
 
+c7$  oc get svc
+NAME      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+ruby-ex   ClusterIP   172.30.227.232   <none>        8080/TCP   4m
 
-* Stop Openshift local cluster
+c7$ oc expose svc ruby-ex
+c7$ oc get route
+NAME      HOST/PORT                                       PATH      SERVICES   PORT       TERMINATION   WILDCARD
+ruby-ex   ruby-ex-httpd-test.apps.192.168.122.95.nip.io             ruby-ex    8080-tcp                 None
+ 
+c7$ curl http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 
-```bash
-c7$ oc cluster down
+laptop$ vi /etc/hosts
+192.168.122.95 ruby-ex-httpd-test.apps.192.168.122.95.nip.io
+
+laptop$ browse http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 ```
 
 
