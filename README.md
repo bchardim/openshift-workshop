@@ -2356,6 +2356,7 @@ laptop$ browse https://192.168.122.95:8443/console
 
 * Test Openshit local cluster
 
+```bash
 c7$ oc login -u developer
 c7$ oc ruby-ex
 c7$ oc new-app centos/ruby-25-centos7~https://github.com/sclorg/ruby-ex.git
