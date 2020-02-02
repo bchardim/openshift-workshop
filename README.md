@@ -2072,6 +2072,8 @@ https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logg
 
 ### Architecture
 
+The following is the standard ELK architecture for Openshift 3.11 cluster.
+
 ![alt text]( images/elk.png "OCP ELK Architecture")
 
 
