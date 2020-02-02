@@ -1944,6 +1944,7 @@ $ oc describe quota
 $ oc login -u admin
 $ oc new-project quota-dev
 $ oc adm policy add-role-to-user admin developer -n quota-dev
+$ oc delete limits quota-dev-default-limits && oc delete quota quota-dev-default-quota
 
 $ cat <<EOF > /tmp/limits.yml
 apiVersion: "v1"
@@ -1954,7 +1955,7 @@ spec:
   limits:
     - type: "Container"
       default:
-        cpu: "250m"
+        cpu: "20m"
 EOF
 
 $ oc create -f /tmp/limits.yml
@@ -1969,7 +1970,7 @@ metadata:
   name: project-quota
 spec:
   hard:
-    cpu: "900m"
+    cpu: "40m"
 EOF
 
 $ oc create -f /tmp/quota.yml
@@ -1992,8 +1993,22 @@ $ oc new-app --name=hello registry.access.redhat.com/rhscl/httpd-24-rhel7~https:
 $ oc expose svc hello --hostname=hello.apps.info.net
 $ curl -s hello.apps.info.net | grep Welcome
 
+$ oc describe limits
+Name:       project-limits
+Namespace:  quota-dev
+Type        Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---  ---  ---------------  -------------  -----------------------
+Container   cpu       -    -    250m             250m           -
+
 $ oc describe quota
-$ oc scale dc hello --replicas=4
+Name:       project-quota
+Namespace:  quota-dev
+Resource    Used  Hard
+--------    ----  ----
+cpu         140m  900m
+
+
+$ oc scale dc hello --replicas=12
 $ oc get pod -o wide
 
 $ oc describe dc hello | grep Replicas
@@ -2017,4 +2032,13 @@ https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logg
 
 https://docs.openshift.com/container-platform/3.11/install_config/prometheus_cluster_monitoring.html
 
+
+
+<br><br>
+## Using Minishift
+
+### Official Documentation
+
+https://access.redhat.com/documentation/en-us/red_hat_container_development_kit/3.11/html-single/getting_started_guide/index
+https://www.redhat.com/sysadmin/learn-openshift-minishift
 
