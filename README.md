@@ -2553,7 +2553,7 @@ $ oc status -v
 * Master and Node Service Failures
 
 ```bash
-$ oc get nodes
+$ oc get nodes -o wide
 $ oc describe node node1.lab.example.com
 
 [root@master|node ~]$ systemctl list-units --type=services | grep -i openshift
