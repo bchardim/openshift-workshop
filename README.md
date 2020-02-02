@@ -2454,7 +2454,7 @@ $ git clone http://github.com/user/node-hello
 $ cd node-hello
 $ docker build -t node-hello:latest .
 $ docker images
-$ docker tag a9861ee36be4 registry.lab.example.com/project/node-hello:latest
+$ docker tag 2ad06109191b registry.lab.example.com/project/node-hello:latest
 $ docker push myregistry.example.com/node-hello:latest
 
 $ oc new-app --name=hello --docker-image=myregistry.example.com/project/node-hello:latest
@@ -2478,7 +2478,7 @@ STATS_USERNAME=admin
 ```bash
 $ oc get all
 ...
-$ oc export pod docker-registry-1-n2019 < -o json >
+$ oc export pod docker-registry-1-n3028 < -o json >
 ...
 $ oc export svc,dc docker-registry --as-template=docker-registry-file
 ```
