@@ -2072,7 +2072,7 @@ https://docs.openshift.com/container-platform/3.11/install_config/aggregate_logg
 
 ### Architecture
 
-The following is the standard ELK architecture for Openshift 3.11 cluster.
+The following is the standard ELK architecture for Openshift 3.11 clusterc used for aggregate logs.
 
 ![alt text]( images/elk.png "OCP ELK Architecture")
 
@@ -2108,11 +2108,6 @@ NAME             HOST/PORT                          PATH      SERVICES         P
 logging-kibana   logging.apps.info.net ... 1 more             logging-kibana   <all>     reencrypt/Redirect   None
 ```
 
-
-
-
-
-
 <br><br>
 ## Openshift 3 Monitoring with Prometheus and Grafana
 
@@ -2121,6 +2116,56 @@ logging-kibana   logging.apps.info.net ... 1 more             logging-kibana   <
 https://docs.openshift.com/container-platform/3.11/install_config/prometheus_cluster_monitoring.html
 
 ### Architecture
+
+The following is the standard monitoring architecture for Openshift 3.11 cluster based on Prometheus and Grafana.
+
+![alt text]( images/prometheus.png "OCP Monitoring Architecture")
+
+```bash
+$ oc login -u admin
+$ oc project openshift-monitoring
+
+$ oc get pods -o wide
+NAME                                          READY     STATUS    RESTARTS   AGE       IP             NODE             NOMINATED NODE
+alertmanager-main-0                           3/3       Running   0          21h       10.254.8.4     srv12.info.net   <none>
+alertmanager-main-1                           3/3       Running   0          21h       10.254.12.4    srv10.info.net   <none>
+alertmanager-main-2                           3/3       Running   0          20h       10.254.6.2     srv13.info.net   <none>
+cluster-monitoring-operator-6dbf47cf8-wx4sb   1/1       Running   0          21h       10.254.12.2    srv10.info.net   <none>
+grafana-54b6579769-d7r9j                      2/2       Running   0          21h       10.254.12.3    srv10.info.net   <none>
+kube-state-metrics-5f84d8669b-v7jn9           3/3       Running   0          20h       10.254.6.3     srv13.info.net   <none>
+node-exporter-4llwb                           2/2       Running   0          20h       10.0.91.117    srv10.info.net   <none>
+node-exporter-8pldt                           2/2       Running   0          20h       10.0.91.113    srv13.info.net   <none>
+node-exporter-96jjr                           2/2       Running   0          20h       10.0.92.13     srv08.info.net   <none>
+node-exporter-bwjwn                           2/2       Running   0          20h       10.0.92.35     srv01.info.net   <none>
+node-exporter-h5p8b                           2/2       Running   0          20h       10.0.91.115    srv03.info.net   <none>
+node-exporter-jgsxx                           2/2       Running   0          20h       10.0.92.34     srv02.info.net   <none>
+node-exporter-knxcl                           2/2       Running   0          20h       10.0.91.79     srv11.info.net   <none>
+node-exporter-lg5q2                           2/2       Running   0          20h       10.0.91.54     srv07.info.net   <none>
+node-exporter-tqqdc                           2/2       Running   0          20h       10.0.91.56     srv12.info.net   <none>
+node-exporter-w4hkr                           2/2       Running   0          20h       10.0.92.58     srv14.info.net   <none>
+node-exporter-x6klf                           2/2       Running   0          20h       10.0.92.1      srv09.info.net   <none>
+prometheus-k8s-0                              4/4       Running   1          1h        10.254.18.10   srv14.info.net   <none>
+prometheus-k8s-1                              4/4       Running   1          1h        10.254.6.8     srv13.info.net   <none>
+prometheus-operator-5d4db59c69-gfs9m          1/1       Running   0          21h       10.254.10.7    srv11.info.net   <none>
+
+$ oc get pvc
+NAME                                       STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS              AGE
+alertmanager-main-db-alertmanager-main-0   Bound     pvc-db8a7e85-450e-11ea-a504-fa163ed02eb8   300Mi      RWO            glusterfs-storage-block   21h
+alertmanager-main-db-alertmanager-main-1   Bound     pvc-efbe4ec3-450e-11ea-a504-fa163ed02eb8   300Mi      RWO            glusterfs-storage-block   21h
+alertmanager-main-db-alertmanager-main-2   Bound     pvc-03ca4ee8-450f-11ea-a504-fa163ed02eb8   300Mi      RWO            glusterfs-storage-block   21h
+prometheus-k8s-db-prometheus-k8s-0         Bound     pvc-a473a8fb-45b1-11ea-bb90-fa163ed02eb8   2Gi        RWO            glusterfs-storage-block   1h
+prometheus-k8s-db-prometheus-k8s-1         Bound     pvc-acf15949-45b1-11ea-bb90-fa163ed02eb8   2Gi        RWO            glusterfs-storage-block   1h
+
+$ oc get routes
+NAME                HOST/PORT                                                         PATH      SERVICES            PORT      TERMINATION   WILDCARD
+alertmanager-main   alertmanager-main-openshift-monitoring.apps.info.net ... 1 more             alertmanager-main   web       reencrypt     None
+grafana             grafana-openshift-monitoring.apps.info.net ... 1 more                       grafana             https     reencrypt     None
+prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more                prometheus-k8s      web       reencrypt     None
+
+```
+
+
+
 
 
 <br><br>
