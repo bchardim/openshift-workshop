@@ -2287,7 +2287,7 @@ Create a VM in your laptop:
 * 40G disk
 * Internet connectivity (at least with proxy)
 
-Then install local Openshift 3.11 cluster using 'oc cluster up' command as explained on:
+Then install Openshift 3.11 local cluster using 'oc cluster up' command as explained on:
 
 https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
