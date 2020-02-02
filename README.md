@@ -1980,6 +1980,11 @@ $ oc login -u developer
 $ oc project quota-dev
 $ oc describe limits
 $ oc describe quota
+
+$ oc delete limits project-limits
+Error from server (Forbidden): limitranges "project-limits" is forbidden: User "developer" cannot delete limitranges in the namespace "quota-dev": no RBAC policy matched
+$ oc delete quota  project-quota
+Error from server (Forbidden): resourcequotas "project-quota" is forbidden: User "developer" cannot delete resourcequotas in the namespace "quota-dev": no RBAC policy matched
 ```
 
 
@@ -1991,6 +1996,7 @@ $ oc project quota-dev
 
 $ oc new-app --name=hello registry.access.redhat.com/rhscl/httpd-24-rhel7~https://github.com/openshift/httpd-ex.git
 $ oc expose svc hello --hostname=hello.apps.info.net
+$ oc get pods -w
 $ curl -s hello.apps.info.net | grep Welcome
 
 $ oc describe limits
@@ -1998,21 +2004,29 @@ Name:       project-limits
 Namespace:  quota-dev
 Type        Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
 ----        --------  ---  ---  ---------------  -------------  -----------------------
-Container   cpu       -    -    250m             250m           -
+Container   cpu       -    -    20m              20m            -
+
+$  oc describe quota
+Name:       project-quota
+Namespace:  quota-dev
+Resource    Used  Hard
+--------    ----  ----
+cpu         4m    40m
+
+
+$ oc scale dc hello --replicas=15
+$ oc get pod -o wide
+$ oc get events --sort-by='{.lastTimestamp}'
+...
+** Error creating: pods "hello-1-w2pf5" is forbidden: exceeded quota: project-quota, requested: cpu=4m, used: cpu=40m, limited: cpu=40m**
 
 $ oc describe quota
 Name:       project-quota
 Namespace:  quota-dev
 Resource    Used  Hard
 --------    ----  ----
-cpu         140m  900m
+cpu         40m   40m
 
-
-$ oc scale dc hello --replicas=12
-$ oc get pod -o wide
-
-$ oc describe dc hello | grep Replicas
-$ oc get events | grep -i error
 $ oc scale dc hello --replicas=1
 ```
 
