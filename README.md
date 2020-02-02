@@ -2265,14 +2265,101 @@ NAME                HOST/PORT                                                   
 alertmanager-main   alertmanager-main-openshift-monitoring.apps.info.net ... 1 more             alertmanager-main   web       reencrypt     None
 grafana             grafana-openshift-monitoring.apps.info.net ... 1 more                       grafana             https     reencrypt     None
 prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more                prometheus-k8s      web       reencrypt     None
-
 ```
 
 <br><br>
-## Using Minishift
+## Local Cluster Management - oc cluster up
 
 ### Official Documentation
 
-https://access.redhat.com/documentation/en-us/red_hat_container_development_kit/3.11/html-single/getting_started_guide/index <br>
-https://www.redhat.com/sysadmin/learn-openshift-minishift
+https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
+
+### LAB: Install local Openshift 3.11 on Centos7 VM with 'oc cluster up'
+
+Using Centos7 DVD,
+
+http://ftp.rediris.es/mirror/CentOS/7.7.1908/isos/x86_64/CentOS-7-x86_64-Minimal-1908.iso
+
+Create a VM in your laptop:  
+
+* 2vCPUs
+* 4096M RAM
+* 40G disk
+* Internet connectivity (at least with proxy)
+
+Then install local Openshift 3.11 cluster using 'oc cluster up' command as explained on:
+
+https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
+
+
+### Solution
+
+* Install required packages on Centos7 VM (c7$)
+
+```bash
+c7$ sysctl -w net.ipv4.ip_forward=1
+c7$ yum -y upgrade
+c7$ yum -y install git docker vim centos-release-openshift-origin311
+c7$ yum -y install origin-clients   
+```
+
+* Configure Docker daemon 
+
+```bash
+c7$ vi /etc/sysconfig/docker
+...
+OPTIONS="--log-driver=journald --insecure-registry 172.30.0.0/16 --signature-verification=false"
+...
+
+c7$ vi /etc/containers/registries.conf
+...
+[registries.insecure]
+registries = ['172.30.0.0/16']
+...
+c7$ systemctl daemon-reload && systemctl restart docker && systemctl status docker
+```
+
+* Configure firewall
+
+```bash
+c7$ docker network inspect -f "{{range .IPAM.Config }}{{ .Subnet }}{{end}}" bridge
+172.17.0.0/16
+
+c7$ firewall-cmd --permanent --new-zone dockerc
+c7$ firewall-cmd --permanent --zone dockerc --add-source 172.17.0.0/16
+c7$ firewall-cmd --permanent --zone dockerc --add-port 8443/tcp
+c7$ firewall-cmd --permanent --zone dockerc --add-port 53/udp
+c7$ firewall-cmd --permanent --zone dockerc --add-port 8053/udp
+c7$ firewall-cmd --permanent --add-port=80/tcp --add-port=443/tcp  --add-port=8443/tcp
+c7$ firewall-cmd --reload
+```
+
+* Run Openshift local cluster on public interface
+
+```bash
+c7$ hostname --ip-address
+192.168.122.95
+c7$ mkdir -p /openshift3
+c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --routing-suffix apps.$(hostname --ip-address).nip.io 
+```
+
+* Explore Openshift local cluster
+
+```bash
+c7$ oc login -u system:admin
+c7$ oc get nodes
+
+laptop$ browse https://192.168.122.95:8443/console
+```
+
+* Test Openshit local cluster
+
+
+
+* Stop Openshift local cluster
+
+```bash
+c7$ oc cluster down
+```
+
 
