@@ -91,7 +91,7 @@ $ oc get -n default dc/router-apps -o json | grep \"image\"
 "image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.157",
 ```
 
-* Update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
+* On bastion node update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
 
 ```bash
 $ yum update -y openshift-ansible
@@ -99,7 +99,7 @@ $ rpm -q openshift-ansible
 openshift-ansible-3.11.161-2.git.5.029d67f.el7.noarch
 ```
 
-* Modify cluster inventory in order to reflect the new package and image versions.
+* On bastion node modify cluster inventory in order to reflect the new package and image versions.
 
 ```bash
 $ cat hosts
@@ -114,16 +114,16 @@ openshift_web_console_version="v3.11.157"
 openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.157
 ```
 
-Change 3.11.157 to 3.11.161 for example.
+Change 3.11.157 to 3.11.161
 
 
-* Export ansible inventory file updated that matches the Openshift cluster.
+* On bastion node export ansible inventory file updated that matches the Openshift cluster.
 
 ```bash
 $ export INVENTORY=/path/to/hosts_upgrade
 ```
 
-* If using external gluster cluster provisioned during the install, comment that nodes from the invetory used to upgrade  the cluster:
+* **If using external gluster cluster provisioned during the install**, comment that nodes from the inventory used to upgrade the cluster:
 
 ```bash
 [glusterfs]
@@ -146,31 +146,29 @@ rhel-7-server-rpms/7Server/x86_64
 $ ansible all -i ${INVENTORY} -m shell -a 'yum clean all && yum repolist'
 ```
 
-*  Validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
+*  From bastion node validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
 
 ```bash
 master$ oc adm migrate storage --include=* --loglevel=2 --confirm --config /etc/origin/master/admin.kubeconfig
 ```
 
-* From bastion node, upgrade the control plane.
+* From bastion node upgrade the control plane.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
 ```
 
-* From bastion node, upgrade worker nodes.
+* From bastion node upgrade worker nodes.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
 ```
 
-* From bastion node, upgrade infra nodes.
+* From bastion node upgrade infra nodes.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
 ```
-
-
 
 * Quick upgrade verify.
 
