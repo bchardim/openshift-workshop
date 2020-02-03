@@ -79,17 +79,18 @@ Openshift-ansible-3.11.x
 
 ```bash
 $ cat hosts
-openshift_pkg_version="-3.11.82"
-openshift_image_tag="v3.11.82"
+openshift_pkg_version="-3.11.157"
+openshift_image_tag="v3.11.157"
 ...
-openshift_metrics_image_version=v3.11.82
-openshift_logging_image_version=v3.11.82
-openshift_service_catalog_image_version=v3.11.82
+openshift_metrics_image_version=v3.11.157
+openshift_logging_image_version=v3.11.157
+openshift_service_catalog_image_version=v3.11.157
 ...
-openshift_web_console_version="v3.11.82"
-openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.82
+openshift_web_console_version="v3.11.157"
+openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.157
 ```
-Change 3.11.82 to 3.11.117 for example
+
+Change 3.11.157 to 3.11.161 for example.
 
 * From bastion node, upgrade the control plane.
 
