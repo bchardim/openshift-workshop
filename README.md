@@ -176,6 +176,29 @@ $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} pl
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
 ```
 
+* Check Openshift version after upgrade.
+
+```bash
+$ curl -k https://srv01.info.net:443/version
+{
+  "major": "1",
+  "minor": "11+",
+  "gitVersion": "v1.11.0+d4cacc0",
+  "gitCommit": "d4cacc0",
+  "gitTreeState": "clean",
+  "buildDate": "2019-12-24T05:49:02Z",
+  "goVersion": "go1.10.8",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+$ oc get -n default dc/docker-registry -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.161",
+
+$ oc get -n default dc/router-apps -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.161",
+```
+
 * Quick upgrade verify.
 
 ```bash
@@ -184,10 +207,6 @@ $ oc get pods -n kube-system
 $ oc get pods --all-namespaces
 $ oc get pvc --all-namespaces
 $ oc get pv
-$ oc get -n default dc/docker-registry -o json | grep \"image\"
-    "image": "openshift3/ose-docker-registry:v3.11.117",
-$ oc get -n default dc/router -o json | grep \"image\"
-    "image": "openshift3/ose-haproxy-router:v3.11.117",
 ```
 
 * Run Openshift 3 HealthCheck procedure (see next section).
@@ -214,16 +233,15 @@ $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts -e opensh
 
 ```bash
 $ oc new-project httpd-test
-$ oc new-app --image-stream=httpd-24-rhel7
-$ oc expose service httpd-24-rhel7
-$ oc create route edge httpd-24-rhel7-ssl --service=httpd-24-rhel7 --hostname=httpd-24-rhel7-ssl-httpd-test.apps.info.net
+$ oc new-app --image-stream=httpd
+$ oc expose service httpd
+$ oc create route edge httpd-ssl --service=httpd --hostname=httpd.apps.info.net
 $ oc get pods
 $ oc get svc
 $ oc get route
 
-$ curl httpd-24-rhel7-httpd-test.apps.info.net
-$ curl -k httpd-24-rhel7-httpd-test.apps.info.net
-$ firefox httpd-24-rhel7-httpd-test.apps.info.net
+$ curl -k https://httpd.apps.info.net
+$ firefox https://httpd.apps.info.net 
 
 $ oc delete project httpd-test
 ```
@@ -234,6 +252,7 @@ $ oc delete project httpd-test
 master$ oc get nodes
 master$ oc get pod --all-namespaces -o wide
 
+master$ yum install etcd
 master$ source /etc/etcd/etcd.conf
 master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
   --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS cluster-health
@@ -245,10 +264,13 @@ master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE 
 ### Router and registry health
 
 ```bash
-$ oc -n default get deploymentconfigs/router
-NAME      REVISION   DESIRED   CURRENT   TRIGGERED BY
-router    1          3         3         config
+$ oc -n default get deploymentconfigs/router-apps
+NAME          REVISION   DESIRED   CURRENT   TRIGGERED BY
+router-apps   2          2         2         config 
 
+$ oc -n default get deploymentconfigs/router-shop
+NAME          REVISION   DESIRED   CURRENT   TRIGGERED BY
+router-shop   2          2         2         config
 
 $ oc -n default get deploymentconfigs/docker-registry
 NAME              REVISION   DESIRED   CURRENT   TRIGGERED BY
@@ -265,8 +287,19 @@ Master services keep their state synchronized using the etcd key-value store. Th
 
 
 ```bash
-$ oc get nodes
-...
+$ oc get nodes -o wide
+NAME             STATUS    ROLES           AGE       VERSION           INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION               CONTAINER-RUNTIME
+srv01.info.net   Ready     master          2d        v1.11.0+d4cacc0   10.0.92.35    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv02.info.net   Ready     master          2d        v1.11.0+d4cacc0   10.0.92.34    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv03.info.net   Ready     master          2d        v1.11.0+d4cacc0   10.0.91.115   <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv07.info.net   Ready     compute         2d        v1.11.0+d4cacc0   10.0.91.54    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv08.info.net   Ready     compute         2d        v1.11.0+d4cacc0   10.0.92.13    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv09.info.net   Ready     compute         2d        v1.11.0+d4cacc0   10.0.92.1     <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv10.info.net   Ready     infra,ingress   2d        v1.11.0+d4cacc0   10.0.91.117   <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv11.info.net   Ready     infra,ingress   2d        v1.11.0+d4cacc0   10.0.91.79    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv12.info.net   Ready     infra,ingress   2d        v1.11.0+d4cacc0   10.0.91.56    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv13.info.net   Ready     infra,ingress   2d        v1.11.0+d4cacc0   10.0.91.113   <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
+srv14.info.net   Ready     infra,ingress   2d        v1.11.0+d4cacc0   10.0.92.58    <none>        Employee SKU   3.10.0-1062.9.1.el7.x86_64   docker://1.13.1
 ```
 (Ready status means that master hosts can communicate with node hosts and that the nodes are ready to run pods (excluding the nodes in which scheduling is disabled))
 
@@ -276,15 +309,15 @@ $ oc get nodes
 SkyDNS provides name resolution of local services running in OpenShift Container Platform. This service uses TCP and UDP port 8053.
 
 ```bash
-$ dig +short docker-registry.default.svc.cluster.local
-172.30.150.7
+master$ dig +short docker-registry.default.svc.cluster.local
+10.255.228.82
 
 $ oc get svc/docker-registry -n default
-NAME              CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
-docker-registry   172.30.150.7   <none>        5000/TCP   3d
+NAME              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+docker-registry   ClusterIP   10.255.228.82   <none>        5000/TCP   2d
 ```
 
--> 172.30.150.7 equivalent IP match
+-> 10.255.228.82 equivalent IP match
 
 
 #### API service and web console
@@ -293,20 +326,20 @@ Both the API service and web console share the same port, usually TCP 8443 or 44
 
 
 ```bash
-$ curl -k https://loadbalancer.2e5b.example.opentlc.com:443/version
+$ curl -k https://srv01.info.net:443/version
 {
   "major": "1",
-  "minor": "6",
-  "gitVersion": "v1.6.1+5115d708d7",
-  "gitCommit": "fff65cf",
+  "minor": "11+",
+  "gitVersion": "v1.11.0+d4cacc0",
+  "gitCommit": "d4cacc0",
   "gitTreeState": "clean",
-  "buildDate": "2017-10-11T22:44:25Z",
-  "goVersion": "go1.7.6",
+  "buildDate": "2019-12-24T05:49:02Z",
+  "goVersion": "go1.10.8",
   "compiler": "gc",
   "platform": "linux/amd64"
 }
 
-$ curl -k https://loadbalancer.2e5b.example.opentlc.com:443/healthz
+$ curl -k https://srv01.info.net:443/healthz
 ok
 ```
 
@@ -346,21 +379,20 @@ $ curl -kv https://docker-registry.default.svc.cluster.local:5000/healthz
 <
 * Connection #0 to host docker-registry.default.svc.cluster.local left intact
 
-sh-4.2$ *exit*
+sh-4.2$ exit
 
 ```
 -> The HTTP/1.1 200 OK response means the node is correctly connecting.
 
 ```bash
 $ oc delete project sdn-test
-project "sdn-test" deleted
 ```
 
 * To verify the functionality of the routers, check the registry service once more, but this time from outside the cluster:
 -> Check external access to SDN
 
 ```bash
-$ curl -kv https://docker-registry-default.apps.example.com/healthz
+$ curl -kv https://docker-registry-default.apps.info.net/healthz 
 *   Trying 35.xx.xx.92...
 * TCP_NODELAY set
 * Connected to docker-registry-default.apps.example.com (35.xx.xx.92) port 443 (#0)
@@ -373,7 +405,7 @@ $ curl -kv https://docker-registry-default.apps.example.com/healthz
 Verify wilcard DNS points to LB.
 
 ```bash
-$ dig *.apps.2e5b.example.opentlc.com
+$ dig *.apps.info.net
 ```
 
 Verify all nodes have direct and inverse resolution.
@@ -389,7 +421,7 @@ $ ansible -i hosts all -m shell -a 'host $(hostname); host $(ip a | grep "inet 1
 Master instances need at least 40 GB of hard disk space for the /var directory. Check the disk usage of a master host using the df command:
 
 ```bash
-$ ansible -i hosts -m shell -a "df -hT"
+$ ansible -i hosts all -m shell -a "df -hT"
 ```
 
 #### Check Heketi OCS status
@@ -429,7 +461,7 @@ sleep 5
 heketi-cli server state examine gluster
 sleep 5
 
-master$ heketi-ocs-status.sh glusterfs 
+master$ bash -x heketi-ocs-status.sh glusterfs 
 ...
 ``` 
 
@@ -439,8 +471,6 @@ For proper functionality of dynamically provisioned persistent storage, the defa
 
 ```bash
 # oc get storageclass
-
-# oc get sc
 NAME                          PROVISIONER                AGE
 glusterfs-storage (default)   kubernetes.io/glusterfs    1d
 glusterfs-storage-block       gluster.org/glusterblock   1d
@@ -462,13 +492,13 @@ $ oc get pvc --all-namespaces
 #### Checking PVC and use it on APP
 
 ```bash
-$ oc new-project testme
+$ oc new-project testpvc
 
-$ cat pvc.yml
+$ cat <<EOF > /tmp/testpvc.yml
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
- name: claim1
+ name: claim-testpvc
  annotations:
    volume.beta.kubernetes.io/storage-class: glusterfs-storage
 spec:
@@ -477,18 +507,19 @@ spec:
  resources:
    requests:
      storage: 1Gi
+EOF
 
-$ oc create -f pvc.yml
+$ oc create -f /tmp/testpvc.yml
 $ oc get pvc -> BOUND
 
-$ cat app.yml
+$ cat <<EOF > /tmp/testpvc-app.yml
 apiVersion: v1
 kind: Pod
 metadata:
  name: busybox
 spec:
  containers:
-   - image: busybox
+   - image: registry.redhat.io/ubi7/ubi-minimal
      command:
        - sleep
        - "3600"
@@ -499,14 +530,16 @@ spec:
  volumes:
    - name: mypvc
      persistentVolumeClaim:
-       claimName: claim1
+       claimName: claim-testpvc
+EOF
 
 
-$ oc create -f app.yml
+$ oc create -f /tmp/testpvc-app.yml
 $ oc describe pod busybox  -> Observe Mount
 $ oc get pvc
 $ oc get pv
-$ oc get events
+$ oc get events --sort-by='{.lastTimestamp}'
+$ oc delete project testpvc
 ```
 
 ### Docker storage
@@ -517,6 +550,7 @@ Docker storage disk is mounted as /var/lib/docker and formatted with xfs file sy
 $ ansible -i hosts nodes -m shell -a "cat /etc/sysconfig/docker-storage && docker info"
 
 # docker info
+DOCKER_STORAGE_OPTIONS="--storage-driver overlay2 "
 Containers: 4
  Running: 4
  Paused: 0
@@ -533,18 +567,29 @@ OpenShift API service runs on all master instances. To see the status of the ser
 
 ```bash
 $ oc get pod -n kube-system -l openshift.io/component=api
-NAME                             READY     STATUS    RESTARTS   AGE
-master-api-myserver.com          1/1       Running   0          56d
+NAME                        READY     STATUS    RESTARTS   AGE
+master-api-srv01.info.net   1/1       Running   3          3h
+master-api-srv02.info.net   1/1       Running   2          3h
+master-api-srv03.info.net   1/1       Running   3          3h
 ```
 
 API service exposes a health check, which can be queried externally using the API host name:
 
 ```bash
 $ oc get pod -n kube-system -o wide
-NAME                                               READY     STATUS    RESTARTS   AGE       IP            NODE
-master-api-myserver.com                            1/1       Running   0          7h        10.240.0.16   myserver.com/healthz
+NAME                                READY     STATUS    RESTARTS   AGE       IP            NODE             NOMINATED NODE
+master-api-srv01.info.net           1/1       Running   3          3h        10.0.92.35    srv01.info.net   <none>
+master-api-srv02.info.net           1/1       Running   2          3h        10.0.92.34    srv02.info.net   <none>
+master-api-srv03.info.net           1/1       Running   3          3h        10.0.91.115   srv03.info.net   <none>
+master-controllers-srv01.info.net   1/1       Running   3          3h        10.0.92.35    srv01.info.net   <none>
+master-controllers-srv02.info.net   1/1       Running   3          3h        10.0.92.34    srv02.info.net   <none>
+master-controllers-srv03.info.net   1/1       Running   3          3h        10.0.91.115   srv03.info.net   <none>
+master-etcd-srv01.info.net          1/1       Running   4          2d        10.0.92.35    srv01.info.net   <none>
+master-etcd-srv02.info.net          1/1       Running   4          2d        10.0.92.34    srv02.info.net   <none>
+master-etcd-srv03.info.net          1/1       Running   3          2d        10.0.91.115   srv03.info.net   <none>
 
-$ curl -k https://myserver.com/healthz
+
+$ curl -k https://srv01.info.net/healthz
 ok
 ```
 
@@ -577,7 +622,8 @@ master-<hostname>-<ip>-<8_random_characters>
 Find the hostname of the master host by filtering the output using the following:
 
 ```bash
-$ oc get -n kube-system cm openshift-master-controllers -o json | jq -r '.metadata.annotations[] | fromjson.holderIdentity | match("^master-(.*)-[0-9.]*-[0-9a-z]{8}$") | .captures[0].string'
+$ oc get -n kube-system cm openshift-master-controllers -o json 
+
 ```
 
 ### Verifying correct Maximum Transmission Unit (MTU) size
@@ -601,7 +647,7 @@ These certificates can be found within the /etc/origin/master directory for the 
 $ oc -n default get dc docker-registry -o jsonpath='{.spec.template.spec.containers[].env[?(@.name=="REGISTRY_OPENSHIFT_SERVER_ADDR")].value}{"\n"}'
 docker-registry.default.svc:5000
 
-$ curl -kv https://docker-registry.default.svc:5000/healthz
+master$ curl -kv https://docker-registry.default.svc:5000/healthz
 * About to connect() to docker-registry.default.svc port 5000 (#0)
 *   Trying 172.30.11.171...
 * Connected to docker-registry.default.svc (172.30.11.171) port 5000 (#0)
@@ -649,7 +695,7 @@ $ curl -v https://docker-registry.default.svc:5000/healthz
 View the MTU size of the desired Ethernet device (i.e. eth0):
 
 ```bash
-$ ip link show eth0
+node$ ip link show eth0
 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP mode DEFAULT qlen 1000
     link/ether fa:16:3e:92:6a:86 brd ff:ff:ff:ff:ff:ff
 ```
@@ -665,7 +711,7 @@ node-config-infra          1         1d
 node-config-master         1         1d
 node-config-master-infra   1         1d
 
-$ oc get cm node-config-compute -o yaml
+$ oc get cm node-config-compute -n openshift-node -o yaml
 ...
 ...
 networkConfig:
@@ -682,7 +728,7 @@ Save the changes and reboot the node
 Check if all nodes have NTP activated and sync.
 
 ```bash
-$ ansible -i hosts -m shell -a 'timedatectl | grep NTP' -u quicklab -b
+$ ansible -i hosts all -m shell -a 'timedatectl | grep NTP' -u quicklab -b
 ```
 
 
@@ -691,9 +737,10 @@ $ ansible -i hosts -m shell -a 'timedatectl | grep NTP' -u quicklab -b
 OpenShift Container Platform uses entropy to generate random numbers for objects such as IDs or SSL traffic. These operations wait until there is enough entropy to complete the task.
 Without enough entropy, the kernel is not able to generate these random numbers with sufficient speed, which can lead to timeouts and the refusal of secure connections.
 
+The available entropy should be verified on all node hosts in the cluster. Ideally, this value should be above 1000.
 
 ```bash
-$ ansible -i hosts -m shell -a 'cat /proc/sys/kernel/random/entropy_avail' -u quicklab -b
+$ ansible -i hosts all -m shell -a 'cat /proc/sys/kernel/random/entropy_avail' -u quicklab -b
 ```
 
 ### OpenShift Version and Packages match
@@ -701,12 +748,9 @@ $ ansible -i hosts -m shell -a 'cat /proc/sys/kernel/random/entropy_avail' -u qu
 Check the list of OCP installed packages and their version. Check OCP version.
 
 ```bash
-$ ansible -i hosts --limit nodes  -m shell -a "yum list installed | grep openshift" -u quicklab -b
-$ ansible -i hosts --limit nodes  -m shell -a "/usr/bin/openshift version" -u quicklab -b
+$ ansible -i hosts all --limit nodes  -m shell -a "yum list installed | grep openshift" -u quicklab -b
+$ ansible -i hosts all --limit nodes  -m shell -a "/usr/bin/openshift version" -u quicklab -b
 ```
-
-### Router Sharding Status
-
 
 
 <br><br><br>
@@ -1074,7 +1118,7 @@ $oc get sc
 
 ```bash
 $ oc login -u admin
-$ cat cat <<EOF > /tmp/mysqldb-volume.yml
+$ cat <<EOF > /tmp/mysqldb-volume.yml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
