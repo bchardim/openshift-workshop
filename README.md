@@ -939,6 +939,113 @@ https://docs.openshift.com/container-platform/3.11/scaling_performance/managing_
 https://docs.openshift.com/container-platform/3.11/install_config/storage_examples/gluster_example.html
 https://access.redhat.com/documentation/en-us/red_hat_gluster_storage/3.5/html-single/administration_guide/index
 
+OpenShift uses PersistentVolumes (PVs) to provision persistent storage for pods.
+
+* A project uses PersistentVolumeClaim (PVC) resources to request that a PV be assigned to the project.
+
+* If dynamic provisioning is configured via storage class object, automatically a PV is created and bond to PVC requested by deployment.
+
+* 'oc set volume' can be used to manage the storage type used in a deployment.
+
+
+### Provisioning Persistent Storage
+
+Running containers use ephemeral storage within the container by default.Using ephemeral storage means that data written to the file system within the container is lost when the container is stopped.
+When deploying applications (as databases) that require persistent data when the container is stopped, OpenShift uses Kubernetes persistent volumes (PVs) to provision persistent storage for pods.
+A persistent volume claim (PVC) is used by developers to request PV resources without having specific knowledge of the underlying storage infrastructure.
+
+
+The following is the workflow executed when provisioning persistent storage on Openshift:
+
+* Create the Persistent Volume (can be created dynamically via storage class if supported).
+* Define a Persistent Volume Claim.
+* Use Persistent Storage.
+
+
+#### PV, Persistent Volume
+
+A PV is a resource (PersistentVolume API object) which represents a piece of existing networked storage in the cluster that has been provisioned by an administrator. PVs have a life-cycle independent of any individual pod that uses the PV.
+
+#### PVC, Persistent Volume Claim
+
+PVCs is a resorce (PersistentVolumeClaim API object) which represents a request for storage by a developer.
+
+
+#### Persistent Volume Access Modes
+
+A PV can be mounted on a host in any way supported by the resource provider. Providers have different capabilities and each persistent volume's access modes are set to the specific modes supported by that particular volume.
+
+```bash
+-----------------------------------------------------------------------------------------------
+Access Mode     CLI Abbreviation   Description
+-----------------------------------------------------------------------------------------------
+ReadWriteOnce   RWO                The volume can be mounted as read/write by a single node.
+
+ReadOnlyMany    ROX                The volume can be mounted read-only by many nodes.
+
+ReadWriteMany   RWX                The volume can be mounted as read/write by many nodes.
+------------------------------------------------------------------------------------------------
+```
+
+PV claims are matched to volumes with similar access modes. The only two matching criteria are access modes and size. A claim’s access modes represent a request. Therefore, users can be granted greater, but never lesser access.
+
+
+#### Persistent Volume Storage Classes
+
+PV Claims can optionally request a specific storage class by specifying its name in the storageClassName attribute. Only PVs of the requested class with the same storage class name as the PVC, can be bound to the PVC. The cluster administrator can set a default storage class for all PVCs or configure dynamic provisioners to service one or more storage classes that will match the specifications in an available PVC.
+
+
+```bash
+$oc get sc
+...
+```
+
+#### LAB, Create persistent storage for an app
+
+
+* Create PV as admin.
+
+```bash
+$ oc login -u admin
+$ cat cat <<EOF > /tmp/mysqldb-volume.yml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysqldb-volume
+spec:
+  capacity:
+    storage: 3Gi
+  accessModes:
+  - ReadWriteMany
+  nfs:
+    path: /var/export/dbvol
+    server: services.lab.example.com
+  persistentVolumeReclaimPolicy: Recycle
+
+$ oc create -f /tmp/mysqldb-volume.yml
+$ oc get pv
+```
+
+* As developer deploy an app that initially does not use persistent storage and then use 'oc set volume' command to create a PVC that uses the PV previously created.
+
+```bash
+# oc new-project persistent-storage
+# oc new-app --name=mysqldb --docker-image=myregistry.example.com/rhscl/mysql-57-rhel7 -e MYSQL_USER=sales -e MYSQL_PASSWORD=sales00 -e MYSQL_DATABASE=customers
+
+# oc describe pod mysqldb-1-zasdfsdf | grep -A 2 'Volumes'
+Volumes:
+  mysqldb-volume-1:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+
+# oc set volume dc/mysqldb --add --overwrite --name=mysqldb-volume-1 -t pvc --claim-name=mysqldb-pvclaim --claim-size=3Gi --claim-mode='ReadWriteMany'
+
+# oc get pvc
+# oc describe pod mysqldb-2-sadsad | grep -A 2 'Volumes'
+Volumes:
+  mysqldb-volume-1:
+    Type:       PersistentVolumeClaim ...
+```
+
 
 ### Troubleshooting OCS3 independent mode
 
