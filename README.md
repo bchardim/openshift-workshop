@@ -67,12 +67,36 @@ https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-
 
 * Make sure that you have a full backup of the cluster before upgrading it.
 
+
+* Check Openshift version Before upgrade.
+
+```bash
+$ curl -k https://srv01.info.net:443/version
+{
+  "major": "1",
+  "minor": "11+",
+  "gitVersion": "v1.11.0+d4cacc0",
+  "gitCommit": "d4cacc0",
+  "gitTreeState": "clean",
+  "buildDate": "2019-12-02T08:30:15Z",
+  "goVersion": "go1.10.8",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+$ oc get -n default dc/docker-registry -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.157", 
+
+$ oc get -n default dc/router-apps -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.157",
+```
+
 * Update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
 
 ```bash
 $ yum update -y openshift-ansible
 $ rpm -q openshift-ansible
-Openshift-ansible-3.11.x
+openshift-ansible-3.11.161-2.git.5.029d67f.el7.noarch
 ```
 
 * Modify cluster inventory in order to reflect the new package and image versions.
@@ -92,23 +116,61 @@ openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.157
 
 Change 3.11.157 to 3.11.161 for example.
 
+
+* Export ansible inventory file updated that matches the Openshift cluster.
+
+```bash
+$ export INVENTORY=/path/to/hosts_upgrade
+```
+
+* If using external gluster cluster provisioned during the install, comment that nodes from the invetory used to upgrade  the cluster:
+
+```bash
+[glusterfs]
+### IND MODE
+#srv04.info.net glusterfs_ip=10.0.91.52  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+#srv05.info.net glusterfs_ip=10.0.91.45  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+#srv06.info.net glusterfs_ip=10.0.91.116 glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+```
+
+* Check that all cluster nodes have attached only the required rpm chanels.
+
+```bash
+rhel-7-server-ansible-2.6-rpms/x86_64
+rhel-7-server-extras-rpms/x86_64
+rhel-7-server-ose-3.11-rpms/x86_64
+rhel-7-server-rpms/7Server/x86_64         
+```
+
+```bash
+$ ansible all -i ${INVENTORY} -m shell -a 'yum clean all && yum repolist'
+```
+
+*  Validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
+
+```bash
+master$ oc adm migrate storage --include=* --loglevel=2 --confirm --config /etc/origin/master/admin.kubeconfig
+```
+
 * From bastion node, upgrade the control plane.
 
 ```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
-```
-
-* From bastion node, upgrade infra nodes.
-
-```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
 ```
 
 * From bastion node, upgrade worker nodes.
 
 ```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i hosts playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
 ```
+
+* From bastion node, upgrade infra nodes.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
+```
+
+
 
 * Quick upgrade verify.
 
