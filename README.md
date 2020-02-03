@@ -133,7 +133,7 @@ $ export INVENTORY=/path/to/hosts_upgrade
 #srv06.info.net glusterfs_ip=10.0.91.116 glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
 ```
 
-* Check that all cluster nodes have attached only the required rpm chanels.
+* Check all cluster nodes have attached only the required rpm chanels.
 
 ```bash
 rhel-7-server-ansible-2.6-rpms/x86_64
@@ -144,6 +144,12 @@ rhel-7-server-rpms/7Server/x86_64
 
 ```bash
 $ ansible all -i ${INVENTORY} -m shell -a 'yum clean all && yum repolist'
+```
+
+* Check all cluster nodes have sufficient free space.
+
+```bash
+$ ansible all -i ${INVENTORY} -m shell -a 'df -h'
 ```
 
 *  From bastion node validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
