@@ -1315,7 +1315,7 @@ $ bash -x /tmp/create_nfs.sh
 3.- Execute the procedure.
 ```
 
-
+**Using NFS as backend storage for Openshift is not recommened, here it is being used for teaching purpose.**
 
 
 ### Troubleshooting OCS3 independent mode
