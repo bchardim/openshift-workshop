@@ -2330,7 +2330,7 @@ metadata:
 spec:
   containers:
   - name: redis
-    image: kubernetes/redis:v1
+    image: registry.access.redhat.com/rhscl/redis-32-rhel7
     env:
     - name: MASTER
       value: "true"
@@ -2359,23 +2359,39 @@ EOF
 * Create pod
 
 ```bash
-$ oc create -f redis-pod.yaml
+$ oc create -f /tmp/redis-pod.yaml
 $ oc get pods -w
+```
+
+```bash
+$ oc describe pod redis | grep -A6 -P '(Mounts|Volumes)'
+    Mounts:
+      /redis-master from config (rw)
+      /redis-master-data from data (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-9z4rv (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+--
+Volumes:
+  data:
+    Type:    EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:  
+  config:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      example-redis-config
 ```
 
 
 The newly-created pod has a ConfigMap volume that places the redis-config key of the example-redis-config ConfigMap into a file called redis.conf. This volume is mounted into the /redis-master directory in the Redis container, placing our configuration file at /redis-master/redis.conf, which is where the image looks for the Redis configuration file for the master.
 
-If you oc exec into this pod and run the redis-cli tool, you can check that the configuration was applied correctly:
+If you rsh into this pod,  you can check that the configuration was applied correctly:
 
 ```bash
-$ oc exec -it redis redis-cli
-127.0.0.1:6379> CONFIG GET maxmemory
-1) "maxmemory"
-2) "2097152"
-127.0.0.1:6379> CONFIG GET maxmemory-policy
-1) "maxmemory-policy"
-2) "allkeys-lru"
+$ oc rsh redis
+$ cat /redis-master/..data/redis.conf
+maxmemory 2mb
+maxmemory-policy allkeys-lru
 ```
 
 
