@@ -2022,7 +2022,7 @@ $ sudo docker pull phpmyadmin/phpmyadmin:4.7
 $ oc login -u developer
 $ oc project phpmyadmin
 $ oc whoami -t
-$ docker login -u developer -p cKQfcqUytiCmiUgJvI3x_GksEsDa949bF8EGOSpbm24 docker-registry-default.apps.info.net
+$ docker login -u developer -p TOKEN docker-registry-default.apps.info.net
 $ sudo docker images
 $ sudo docker tag a5160de406e3 docker-registry-default.apps.info.net/phpmyadmin/phpmyadmin:4.7
 $ sudo docker push docker-registry-default.apps.info.net/gogs/gogs:latest
@@ -2071,6 +2071,18 @@ $ oc logs -f phpmyadmin-2-vzddk
 2020-02-04 16:02:38,633 INFO success: php-fpm entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
 2020-02-04 16:02:38,634 INFO success: nginx entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
 ```
+
+
+### LAB, Do the same in your lab.
+
+Hint: 
+
+Not needed to push the image on your local registry, you can execute:
+
+```bash
+$ oc new-app --name=phpmyadmin docker.io/phpmyadmin/phpmyadmin:4.7
+```
+
 
 ### Secrets Objects
 
