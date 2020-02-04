@@ -2921,21 +2921,6 @@ https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
 ### Solution
 
-* [IF PROXY] IF installing behind proxy
-
-```bash
-c7$ cat /root/.bashrc
-...
-export http_proxy=http://192.168.122.1:13128/
-export ftp_proxy=http://192.168.122.1:13128/
-export FTP_PROXY=http://192.168.122.1:13128/
-export https_proxy=http://192.168.122.1:13128/
-export HTTPS_PROXY=http://192.168.122.1:13128/
-export HTTP_PROXY=http://192.168.122.1:13128/
-export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com,info.net,172.30.1.1"
-
-c7$ bash
-```
 
 * Install required packages on Centos7 VM (c7$)
 
@@ -2945,20 +2930,6 @@ c7$ yum -y upgrade
 c7$ yum -y install git docker vim centos-release-openshift-origin311
 c7$ yum -y install origin-clients
 c7$ systemctl start docker && systemctl enable docker 
-```
-
-* [IF PROXY] IF installing behind proxy
-
-```bash
-c7$ mkdir -p /etc/systemd/system/docker.service.d
-c7$ vi /etc/systemd/system/docker.service.d/http-proxy.conf
-[Service]
-
-Environment="HTTP_PROXY=http://192.168.122.1:13128/" "HTTPS_PROXY=http://192.168.122.1:13128/" "NO_PROXY=localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,172.30.0.0/16" 
-
-c7$ systemctl daemon-reload
-c7$ systemctl show docker --property Environment
-c7$ systemctl restart docker
 ```
 
 * Configure Docker daemon 
@@ -2998,10 +2969,7 @@ c7$ firewall-cmd --reload
 c7$ hostname --ip-address
 192.168.122.95
 c7$ mkdir -p /openshift3
-c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --routing-suffix apps.192.168.122.95.nip.io 
-
-[IF PROXY]
-c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --routing-suffix apps.192.168.122.95.nip.io --http-proxy http://192.168.122.1:13128 --https-proxy https://192.168.122.1:13128 --no-proxy localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,172.30.0.0/16
+c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --routing-suffix apps.192.168.122.95.nip.io -loglevel=8
 ```
 
 * Explore Openshift local cluster
