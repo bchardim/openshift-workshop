@@ -1575,10 +1575,10 @@ This is a generic backup of application data and does not take into account appl
 $ oc login -u admin
 $ oc new-project jenkins
 $ oc adm policy add-role-to-user admin developer -n jenkins
-$ oc new-app jenkins-persistent --param ENABLE_OAUTH=true --param MEMORY_LIMIT=1Gi --param VOLUME_CAPACITY=1Gi --param DISABLE_ADMINISTRATIVE_MONITORS=true
+$ oc new-app jenkins-persistent --param ENABLE_OAUTH=true --param MEMORY_LIMIT=1Gi --param VOLUME_CAPACITY=2Gi --param DISABLE_ADMINISTRATIVE_MONITORS=true
 $ oc get pvc
 NAME      STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
-jenkins   Bound     pvc-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   1Gi        RWO            glusterfs-storage   15m
+jenkins   Bound     pvc-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   2Gi        RWO            glusterfs-storage   15m
 
 $ oc get pods -w
 ```
@@ -1705,7 +1705,7 @@ If it is saved in the /var/lib/etcd folder, it is the same as saving it on the m
 
 Creating a backup of all relevant data involves exporting all important information, then restoring into a new project if needed.
 
-* List all the relevant data to back up in the target project (myproject in this case):
+* List all the relevant data to back up in the target project (jenkins in this case):
 
 ```bash
 $ oc project jenkins
@@ -1773,6 +1773,14 @@ total 204
 ```bash
 $ oc api-resources --namespaced=true -o name
 ```
+
+* Delete jenkins project
+
+```bash
+$ oc delete project jenkins
+```
+
+
 
 <br><br><br>
 ## Openshift 3 Resources 
@@ -1984,54 +1992,84 @@ $ oc adm policy add-scc-to-user anyuid -z rootuser
 
 ### LAB: Deploy privileged pod.
 
-* As cluster admin create nginx project. 
+* As cluster admin create phpmyadmin project. 
 
 ```bash
-$ oc login -u admin https://ocp.info.net
-$ oc new-project nginx-test
+$ oc login -u admin
+$ oc new-project phpmyadmin
 ```
 
-* As admin associate developer iser as admin for project nginx.
+* As admin associate developer user as admin for project phpmyadmin.
 
 ```bash
-$ oc policy add-role-to-user admin developer -n nginx-test
+$ oc policy add-role-to-user admin developer -n phpmyadmin
 ```
 
-*  As a developer user, deploy to nginx an application that requires elevated privileges named nginx from nginx image.
+* Upload phpmyadmin image to internal registry.
+
+```bash
+[IF ssl error at docker login]
+# oc extract -n default secrets/registry-certificates --keys=registry.crt
+
+$ cp registry.crt /etc/rhsm/ca/
+$ chmod 644  /etc/rhsm/ca/
+$ mkdir -p /etc/docker/certs.d/docker-registry-default.apps.info.net/
+$ cd  /etc/docker/certs.d/docker-registry-default.apps.info.net/
+$  ln -s /etc/rhsm/ca/registry.crt redhat-ca.crt
+[/IF]
+
+$ sudo docker pull phpmyadmin/phpmyadmin:4.7
+$ oc login -u developer
+$ oc project phpmyadmin
+$ oc whoami -t
+$ docker login -u developer -p cKQfcqUytiCmiUgJvI3x_GksEsDa949bF8EGOSpbm24 docker-registry-default.apps.info.net
+$ sudo docker images
+$ sudo docker tag a5160de406e3 docker-registry-default.apps.info.net/phpmyadmin/phpmyadmin:4.7
+$ sudo docker push docker-registry-default.apps.info.net/gogs/gogs:latest
+```
+
+
+*  As a developer user, deploy to phpmyadmin an application that requires elevated privileges named nginx from nginx image.
 
 ```bash
 $ oc login -u developer
-$ oc project nginx-test
-$ oc new-app --name=nginx --docker-image=registry.lab.example.com/nginx:1.13.1
-$ oc get pods
-```
+$ oc project phpmyadmin
+
+$ oc new-app --name=phpmyadmin phpmyadmin:4.7
+**WARNING: Image "phpmyadmin/phpmyadmin:4.7" runs as the 'root' user which may not be permitted by your cluster administrator**
+
+$ oc logs -f phpmyadmin-1-d6jr7
 ...
-**WARNING: Image "workstation.lab.example.com:5000/nginx:1.13.1" runs as the 'root' user which may not be permitted by your cluster administrator**
-...
+supervisor: couldn't setuid to 65534: Can't drop privilege as nonroot user
+supervisor: child process was not spawned
+supervisor: couldn't setuid to 65534: Can't drop privilege as nonroot user
+supervisor: child process was not spawned
+
 
 * Relax security restrictions for this project. We really need to run this container with privileged access so create a service account named rootuser that allows pods to run using any operating system user.
 
 ```bash
 $ oc login -u admin
-$ oc project nginx-test
+$ oc project phpmyadmin
 $ oc create serviceaccount rootuser
 $ oc adm policy add-scc-to-user anyuid -z rootuser
 ```
 
 ```bash
 $ oc login -u developer
-$ oc project nginx-test
-$ oc patch dc/nginx --patch '{"spec":{"template":{"spec":{"serviceAccountName": "rootuser"}}}}'
-$ oc get pods
-NAME            READY     STATUS    RESTARTS   AGE
-nginx-2-qd87z   1/1       Running   0          2m
-```
-
-* Test nginx-test project.
-
-```bash
-$ oc expose svc nginx --hostname nginx.apps.info.net
-$ curl -s http://nginx.apps.info.net
+$ oc project phpmyadmin
+$ oc patch dc/phpmyadmin --patch '{"spec":{"template":{"spec":{"serviceAccountName": "rootuser"}}}}'
+$ oc logs -f phpmyadmin-2-vzddk
+2020-02-04 16:02:36,131 CRIT Supervisor running as root (no user in config file)
+2020-02-04 16:02:36,131 WARN Included extra file "/etc/supervisor.d/nginx.ini" during parsing
+2020-02-04 16:02:36,131 WARN Included extra file "/etc/supervisor.d/php.ini" during parsing
+2020-02-04 16:02:36,230 INFO RPC interface 'supervisor' initialized
+2020-02-04 16:02:36,230 CRIT Server 'unix_http_server' running without any HTTP authentication checking
+2020-02-04 16:02:36,231 INFO supervisord started with pid 1
+2020-02-04 16:02:37,233 INFO spawned: 'php-fpm' with pid 21
+2020-02-04 16:02:37,235 INFO spawned: 'nginx' with pid 22
+2020-02-04 16:02:38,633 INFO success: php-fpm entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2020-02-04 16:02:38,634 INFO success: nginx entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
 ```
 
 ### Secrets Objects
