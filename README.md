@@ -1327,26 +1327,62 @@ Here are a series of useful commands to verify the status of OCS and Heketi. Rem
 
 ```bash
 [root@srv04 ~]$ systemctl status glusterd
+   Loaded: loaded (/usr/lib/systemd/system/glusterd.service; enabled; vendor preset: disabled)
+   Active: active (running) since Sat 2020-02-01 09:11:34 EST; 2 days ago
+     Docs: man:glusterd(8)
+  Process: 1437 ExecStart=/usr/sbin/glusterd -p /var/run/glusterd.pid --log-level $LOG_LEVEL $GLUSTERD_OPTIONS (code=exited, status=0/SUCCESS)
+ Main PID: 1444 (glusterd)
+    Tasks: 220
+   CGroup: /system.slice/glusterd.service
+           ├─ 1444 /usr/sbin/glusterd -p /var/run/glusterd.pid --log-level INFO
+           ├─ 4181 /usr/sbin/glusterfsd -s 10.0.91.52 --volfile-id heketidbstorage.10.0.91.52.var-lib-heketi-mounts-vg_9e71c930c7f7e50ecd8a98beec5b709e-brick_c5eb703c81d3d2266fab0f3c21e3734a-brick -p /var/run...
+           ├─ 4467 /usr/sbin/glusterfsd -s 10.0.91.52 --volfile-id glusterfs-registry-volume.10.0.91.52.var-lib-heketi-mounts-vg_9e71c930c7f7e50ecd8a98beec5b709e-brick_d56680b72e20283b17e7425e92bc19f6-brick -...
+           ├─ 4807 /usr/sbin/glusterfsd -s 10.0.91.52 --volfile-id vol_6fc44ebd2c3dbba315e6b1ddd70c17ce.10.0.91.52.var-lib-heketi-mounts-vg_9e71c930c7f7e50ecd8a98beec5b709e-brick_f22d82d313fb5bd6b029e2693baa6...
+           ├─ 5714 /usr/sbin/glusterfsd -s 10.0.91.52 --volfile-id vol_c18e3d7d906da2c87f62d477b4932ebd.10.0.91.52.var-lib-heketi-mounts-vg_9e71c930c7f7e50ecd8a98beec5b709e-brick_c6b41c67fb152fcf3b84d8d2013b3...
+           ├─10473 /usr/sbin/glusterfsd -s 10.0.91.52 --volfile-id vol_ef49133ba57daa31b08a5a6e2e743fab.10.0.91.52.var-lib-heketi-mounts-vg_9e71c930c7f7e50ecd8a98beec5b709e-brick_58934a7c0508b44db0cf119411f0a...
+           └─25414 /usr/sbin/glusterfs -s localhost --volfile-id gluster/glustershd -p /var/run/gluster/glustershd/glustershd.pid -l /var/log/glusterfs/glustershd.log -S /var/run/gluster/839622c65ffd03c6.sock...
+
+Feb 01 09:11:32 srv04.info.net systemd[1]: Starting GlusterFS, a clustered file-system server...
+Feb 01 09:11:34 srv04.info.net systemd[1]: Started GlusterFS, a clustered file-system server.
 ...
 ```
+
+* Gluster cluster status, peer connected.
+
+[root@srv04 ~]# gluster peer status
+Number of Peers: 2
+
+Hostname: srv05.info.net
+Uuid: c32cdf37-b38e-45bb-a97c-e3fde0b42604
+State: Peer in Cluster (Connected)
+Other names:
+srv05.info.net
+
+Hostname: 10.0.91.116
+Uuid: ccebe291-99c1-47b7-8349-d15582225f67
+State: Peer in Cluster (Connected)
+[root@srv04 ~]# host 10.0.91.116
+
 
 * Status of volumes managed by Gluster. We see that everyone is online.
 
 ```bash
 [root@srv04 ~]$ gluster vol status
-Status of volume: heketidbstorage
+Status of volume: glusterfs-registry-volume
 Gluster process                             TCP Port  RDMA Port  Online  Pid
 ------------------------------------------------------------------------------
-Brick 10.66.8.62:/var/lib/heketi/mounts/vg_
-7f6984d6ee744833bc85ba7cf3c4d77f/brick_1e34
-fa7cd209930837302f5079d0a9f4/brick          49152     0          Y       3036
-Brick 10.66.8.66:/var/lib/heketi/mounts/vg_
-aeb5254e5ee3b863b841fb42fe24e531/brick_5d2f
-56e58467fdf5210582b31876caeb/brick          49152     0          Y       3762
-Brick 10.66.8.65:/var/lib/heketi/mounts/vg_
-086f3a9967ce9463d68e8e0413d24109/brick_5d75
-c89e2ebd66e82a8aa08d0d16cd77/brick          49152     0          Y       21963
-Self-heal Daemon on localhost               N/A       N/A        Y       24735
+Brick 10.0.91.116:/var/lib/heketi/mounts/vg
+_0b1faec23c9f051560b9787d719de80f/brick_e37
+f231c28f89efc3a54b19f36e90d04/brick         49153     0          Y       4458 
+Brick 10.0.91.52:/var/lib/heketi/mounts/vg_
+9e71c930c7f7e50ecd8a98beec5b709e/brick_d566
+80b72e20283b17e7425e92bc19f6/brick          49153     0          Y       4467 
+Brick 10.0.91.45:/var/lib/heketi/mounts/vg_
+18740665947fde1d3eb05c882dae6baf/brick_e849
+aff40e2dea7b4c7c8449aa6aaf49/brick          49153     0          Y       4721 
+Self-heal Daemon on localhost               N/A       N/A        Y       25414
+Self-heal Daemon on 10.0.91.116             N/A       N/A        Y       26673
+Self-heal Daemon on srv05.info.net          N/A       N/A        Y       26126
 ...
 ```
 
@@ -1354,13 +1390,36 @@ Self-heal Daemon on localhost               N/A       N/A        Y       24735
 
 ```bash
 [root@srv04 ~]$ gluster vol list
+glusterfs-registry-volume
+heketidbstorage
+vol_6fc44ebd2c3dbba315e6b1ddd70c17ce
+vol_c18e3d7d906da2c87f62d477b4932ebd
+vol_ef49133ba57daa31b08a5a6e2e743fab
 ...
 ```
 
 * Detailed information of a specific volume.
 
 ```bash
-[root@srv04 ~]$ gluster vol info vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a
+[root@srv04 ~]$ gluster vol info vol_ef49133ba57daa31b08a5a6e2e743fab
+Volume Name: vol_ef49133ba57daa31b08a5a6e2e743fab
+Type: Replicate
+Volume ID: 2a9cbe4f-79dc-4678-8197-44eb06a37fd1
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 3 = 3
+Transport-type: tcp
+Bricks:
+Brick1: 10.0.91.52:/var/lib/heketi/mounts/vg_9e71c930c7f7e50ecd8a98beec5b709e/brick_58934a7c0508b44db0cf119411f0a864/brick
+Brick2: 10.0.91.45:/var/lib/heketi/mounts/vg_18740665947fde1d3eb05c882dae6baf/brick_ed2df9d911a07fce50d724c309f6f4cf/brick
+Brick3: 10.0.91.116:/var/lib/heketi/mounts/vg_0b1faec23c9f051560b9787d719de80f/brick_73e579d5e8773cc5ff107525df76ef4d/brick
+Options Reconfigured:
+user.heketi.id: ef49133ba57daa31b08a5a6e2e743fab
+server.tcp-user-timeout: 42
+transport.address-family: inet
+storage.fips-mode-rchecksum: on
+nfs.disable: on
+performance.client-io-threads: off
 ...
 ```
 
@@ -1368,20 +1427,51 @@ Self-heal Daemon on localhost               N/A       N/A        Y       24735
   If there are still nodes that have not been able to replicate the current status, so they have pending changes. Number entries equal to 0, means that there are no pending changes to write to the node's brick. 
 
 ```bash
-[root@srv04 ~]$ gluster volume heal vol-app-ind_arquitectura_gfs-data-pro-ind_579b091c-a195-11e9-8c91-566f3ad8000a info
+[root@srv04 ~]$ gluster volume heal vol_ef49133ba57daa31b08a5a6e2e743fab info
+Brick 10.0.91.52:/var/lib/heketi/mounts/vg_9e71c930c7f7e50ecd8a98beec5b709e/brick_58934a7c0508b44db0cf119411f0a864/brick
+Status: Connected
+Number of entries: 0
+
+Brick 10.0.91.45:/var/lib/heketi/mounts/vg_18740665947fde1d3eb05c882dae6baf/brick_ed2df9d911a07fce50d724c309f6f4cf/brick
+Status: Connected
+Number of entries: 0
+
+Brick 10.0.91.116:/var/lib/heketi/mounts/vg_0b1faec23c9f051560b9787d719de80f/brick_73e579d5e8773cc5ff107525df76ef4d/brick
+Status: Connected
+Number of entries: 0
 ...
 ```
 
 * Heketi pod commands.
 
 ```bash
+$ oc login -u admin
 $ oc project glusterfs
 $ oc get pods
 $ oc rsh heketi-storage-ind-1-z97hw
 
 $$ heketi-cli volume list
+Id:53f3cf1d0f2887c5fd2705536c433a71    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:heketidbstorage
+Id:6fc44ebd2c3dbba315e6b1ddd70c17ce    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:vol_6fc44ebd2c3dbba315e6b1ddd70c17ce [block]
+Id:6fe1df061f00c2edbf0f9dce8e468f1d    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:glusterfs-registry-volume
+Id:c18e3d7d906da2c87f62d477b4932ebd    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:vol_c18e3d7d906da2c87f62d477b4932ebd
+Id:ef49133ba57daa31b08a5a6e2e743fab    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:vol_ef49133ba57daa31b08a5a6e2e743fab
+
 $$ heketi-cli blockvolume list
+Id:54520daf92d2df6be09bcbab88c35d5c    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:blockvol_54520daf92d2df6be09bcbab88c35d5c
+Id:8488f00b698fcbe4c6543d32ec550841    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:blockvol_8488f00b698fcbe4c6543d32ec550841
+Id:a9f5eb1f314ff30935a4bb22c7a8bff7    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:blockvol_a9f5eb1f314ff30935a4bb22c7a8bff7
+Id:b10e088c9f5e2e66c008790ad41b9916    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:blockvol_b10e088c9f5e2e66c008790ad41b9916
+Id:d37639ebc6b608d6c4c7a15b23864ce1    Cluster:6e96721f0e68b678cf89b19d2c5f3330    Name:blockvol_d37639ebc6b608d6c4c7a15b23864ce1
+
+
 $$ heketi-cli topology info
+Cluster Id: 6e96721f0e68b678cf89b19d2c5f3330
+
+    File:  true
+    Block: true
+
+    Volumes:
 ...
 ```
 
