@@ -1309,8 +1309,10 @@ systemctl enable nfs-server
 systemctl restart nfs-server
 EOF 
 
-2.- As admin, create PV as httpd-volume.yml (we do not have dynamic provisioning)
-3.- Execute the procesure
+$ bash -x /tmp/create_nfs.sh
+
+2.- As admin, create PV as httpd-volume.yml (we do not have dynamic provisioning on the lab).
+3.- Execute the procedure.
 ```
 
 
