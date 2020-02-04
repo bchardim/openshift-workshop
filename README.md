@@ -1275,7 +1275,7 @@ $ oc delete project persistent-storage-test
 ```
 
 
-### LAB, Do the same in your lab.
+#### LAB, Do the same in your lab.
 
 
 ```bash
@@ -1990,7 +1990,7 @@ $ oc adm policy add-scc-to-user anyuid -z rootuser
 ```
 
 
-### LAB: Deploy privileged pod.
+#### LAB: Deploy privileged pod.
 
 * As cluster admin create phpmyadmin project. 
 
@@ -2073,7 +2073,7 @@ $ oc logs -f phpmyadmin-2-vzddk
 ```
 
 
-### LAB, Do the same in your lab.
+#### LAB, Do the same in your lab.
 
 Hint: 
 
@@ -2233,7 +2233,7 @@ MySQL [(none)]> show databases;
 5 rows in set (0.01 sec)
 ```
 
-### LAB, Do the same in your lab.
+#### LAB, Do the same in your lab.
 
 Hint: in redis-pod.yaml change image location from 'image: registry.access.redhat.com/rhscl/redis-32-rhel7' to 'image: redis'.
 
@@ -2396,7 +2396,7 @@ maxmemory 2mb
 maxmemory-policy allkeys-lru
 ```
 
-### LAB, Do the same in your lab.
+#### LAB, Do the same in your lab.
 
 
 ### Limiting Resource Usage
@@ -2427,7 +2427,7 @@ OpenShift can enforce quotas that track and limit the use of two kinds of resour
 
 ```bash
 $ oc login -u admin
-$ oc project quota-test
+$ oc new-project quota-test
 
 $ cat <<EOF > /tmp/quota-test.yml
 apiVersion: v1
@@ -2444,6 +2444,13 @@ EOF
 $ oc create -f /tmp/quota-test.yml
 $ oc get resourcequota
 $ oc describe resourcequota quota-test
+Name:       quota-test
+Namespace:  quota-test
+Resource    Used  Hard
+--------    ----  ----
+cpu         0     500m
+memory      0     1Gi
+services    0     2
 ```
 
 
@@ -2456,8 +2463,8 @@ Consider that a limit range defines valid ranges and default values for a single
 
 
 ```bash
-$ oc login -u developer
-$ oc project limits-test
+$ oc login -u admin
+$ oc new-project limits-test
 
 $ cat <<EOF > /tmp/limits-test.yml
 apiVersion: "v1"
@@ -2479,9 +2486,17 @@ spec:
         memory: "512Mi"
 EOF
 
-$ oc create -f limits-test.yml
+$ oc create -f /tmp/limits-test.yml
 $ oc get limits
 $ oc describe limits limits-test
+Name:       limits-test
+Namespace:  limits-test
+Type        Resource  Min   Max    Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---   ---    ---------------  -------------  -----------------------
+Pod         cpu       100m  1      -                -              -
+Pod         memory    20Mi  512Mi  -                -              -
+Container   cpu       -     -      1                1              -
+Container   memory    -     -      512Mi            512Mi          -
 ```
 
 
@@ -2591,7 +2606,13 @@ spec:
 EOF
 
 $ oc create -f /tmp/limits.yml
-$ oc describe limits
+$ oc describe limits project-limits
+Name:       project-limits
+Namespace:  quota-dev
+Type        Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---  ---  ---------------  -------------  -----------------------
+Container   cpu       -    -    20m              20m            -
+
 ```
 
 ```bash
@@ -2606,7 +2627,13 @@ spec:
 EOF
 
 $ oc create -f /tmp/quota.yml
-$ oc describe quota
+$ oc describe quota project-quota
+Name:       project-quota
+Namespace:  quota-dev
+Resource    Used  Hard
+--------    ----  ----
+cpu         0     40m
+
 
 $ oc login -u developer
 $ oc project quota-dev
@@ -2866,7 +2893,7 @@ prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more
 
 https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
-### LAB: Install local Openshift 3.11 on Centos7 VM with 'oc cluster up'
+#### LAB: Install local Openshift 3.11 on Centos7 VM with 'oc cluster up'
 
 Using Centos7 DVD,
 
