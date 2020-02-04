@@ -2141,7 +2141,7 @@ Create a MySQL database container that uses a Secret for storing database authen
 
 ```bash
 $ oc login -u developer
-$ oc new-project mysql-test
+$ oc new-project mysql
 $ less mysql.yml
 ...
 ...
@@ -2174,18 +2174,20 @@ $ less mysql.yml
 ```
 
 * Create a secret containing the credentials used by the MySQL container image, as requested by the template. Give to the secret the name mysql.
-  database user name: 'mysql'                     [template database-user key]
-  password: 'redhat'                              [template database-password key] 
-  database administrator password 'DB-admin'      [template database-root-password key]
+<br>  database user name: 'customers'                     [template database-name key]
+<br>  database user name: 'mysql'                     [template database-user key]
+<br>  password: 'redhat'                              [template database-password key] 
+<br>  database administrator password 'DB-admin'      [template database-root-password key]
 
 
 ```bash
-$ oc create secret generic mysql --from-literal='database-user'='mysql' --from-literal='database-password'='redhat' --from-literal='database-root-password'='DB-admin'
+$ oc create secret generic mysql  --from-literal='database-name'='customers' --from-literal='database-user'='mysql' --from-literal='database-password'='redhat' --from-literal='database-root-password'='DB-admin'
 $ oc get secret mysql -o yaml
 apiVersion: v1
 data:
+  database-name: Y3VzdG9tZXJz
   database-password: cmVkaGF0
-  database-root-password: ZG8yODAtYWRtaW4=
+  database-root-password: REItYWRtaW4=
   database-user: bXlzcWw=
 kind: Secret
 ...
@@ -2210,7 +2212,28 @@ $ oc port-forward mysql-1-zl2zq 13306:3306
 
 ```bash
 $ mysql -uroot -pDB-admin -h127.0.0.1 -P13306
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MySQL connection id is 10
+Server version: 5.7.24 MySQL Community Server (GPL)
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MySQL [(none)]> show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| customers          |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+5 rows in set (0.01 sec)
 ```
+
+### LAB, Do it in your lab.
 
 
 ### ConfigMap Objects
