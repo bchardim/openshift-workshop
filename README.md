@@ -2235,6 +2235,8 @@ MySQL [(none)]> show databases;
 
 ### LAB, Do the same in your lab.
 
+Hint: in redis-pod.yaml change image location from 'image: registry.access.redhat.com/rhscl/redis-32-rhel7' to 'image: redis'.
+
 
 ### ConfigMap Objects
 
