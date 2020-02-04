@@ -2280,11 +2280,11 @@ maxmemory 2mb
 maxmemory-policy allkeys-lru
 ```
 
-* Create redis-test project
+* Create redis project
 
 ```bash
 $ oc login -u developer
-$ oc new-project redis-test
+$ oc new-project redis
 ```
 
 If your configuration file is located at samples/redis/redis-config, create a ConfigMap with it:
