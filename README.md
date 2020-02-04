@@ -1275,7 +1275,7 @@ $ oc delete project persistent-storage-test
 ```
 
 
-### LAB, Do the same in your lab
+### LAB, Do the same in your lab.
 
 
 ```bash
@@ -2233,7 +2233,7 @@ MySQL [(none)]> show databases;
 5 rows in set (0.01 sec)
 ```
 
-### LAB, Do it in your lab.
+### LAB, Do the same in your lab
 
 
 ### ConfigMap Objects
