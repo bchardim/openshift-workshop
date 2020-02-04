@@ -2912,7 +2912,7 @@ Create a VM in your laptop:
 * 2vCPUs
 * 4096M RAM
 * 40G disk
-* Internet connectivity (at least with proxy)
+* Internet connectivity
 
 Then install Openshift 3.11 local cluster using 'oc cluster up' command as explained on:
 
@@ -2969,7 +2969,7 @@ c7$ firewall-cmd --reload
 c7$ hostname --ip-address
 192.168.122.95
 c7$ mkdir -p /openshift3
-c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --routing-suffix apps.192.168.122.95.nip.io -loglevel=8
+c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --routing-suffix apps.192.168.122.95.nip.io --loglevel=8
 ```
 
 * Explore Openshift local cluster
