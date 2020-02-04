@@ -1168,7 +1168,7 @@ glusterfs-storage-block       gluster.org/glusterblock-glusterfs   2d
 ...
 ```
 
-#### LAB, Create persistent storage for an app
+#### LAB: Create persistent storage for an app.
 
 
 * We do not need to create PV as admin because we are using dynamic storage class.
@@ -1275,7 +1275,7 @@ $ oc delete project persistent-storage-test
 ```
 
 
-#### LAB, Do the same in your lab.
+#### LAB: Do the same in your lab.
 
 
 ```bash
@@ -2073,7 +2073,7 @@ $ oc logs -f phpmyadmin-2-vzddk
 ```
 
 
-#### LAB, Do the same in your lab.
+#### LAB: Do the same in your lab.
 
 Hint: 
 
@@ -2233,7 +2233,7 @@ MySQL [(none)]> show databases;
 5 rows in set (0.01 sec)
 ```
 
-#### LAB, Do the same in your lab.
+#### LAB: Do the same in your lab.
 
 Hint: in redis-pod.yaml change image location from 'image: registry.access.redhat.com/rhscl/redis-32-rhel7' to 'image: redis'.
 
@@ -2396,7 +2396,7 @@ maxmemory 2mb
 maxmemory-policy allkeys-lru
 ```
 
-#### LAB, Do the same in your lab.
+#### LAB: Do the same in your lab.
 
 
 ### Limiting Resource Usage
@@ -2583,7 +2583,7 @@ $ oc describe quota
 
 
 
-#### LAB: Limits and Quota
+#### LAB: Limits and Quota.
 
 * As a cluster administrator, add a quota and a limit range to the project to provide default resource requests for pods in the project 'quota-dev'
 
@@ -2687,7 +2687,13 @@ Resource    Used  Hard
 cpu         40m   40m
 
 $ oc scale dc hello --replicas=1
+$ oc get pods -w
 ```
+
+#### LAB: Do the same in your lab.
+
+Hint: 
+
 
 
 <br><br><br>
@@ -2893,7 +2899,7 @@ prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more
 
 https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
-#### LAB: Install local Openshift 3.11 on Centos7 VM with 'oc cluster up'
+#### LAB: Install local Openshift 3.11 on Centos7 VM with 'oc cluster up'.
 
 Using Centos7 DVD,
 
