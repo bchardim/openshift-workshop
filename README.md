@@ -2525,7 +2525,7 @@ $ oc create clusterquota env-dev \
 ```
 
 
-### Default project template
+#### Default project template
 
 In order to create default quotas and limit ranges for new projects, specific values for CPU and memory cat been added to the default project template.
 
@@ -2688,11 +2688,13 @@ cpu         40m   40m
 
 $ oc scale dc hello --replicas=1
 $ oc get pods -w
+
+$ oc delete project quota-dev
 ```
 
 #### LAB: Do the same in your lab.
 
-Hint: 
+Hint: Use centos/httpd-24-centos7 image from docker.io 
 
 
 
