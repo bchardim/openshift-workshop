@@ -2009,7 +2009,7 @@ $ oc policy add-role-to-user admin developer -n phpmyadmin
 
 ```bash
 [IF ssl error at docker login]
-# oc extract -n default secrets/registry-certificates --keys=registry.crt
+$ oc extract -n default secrets/registry-certificates --keys=registry.crt
 
 $ cp registry.crt /etc/rhsm/ca/
 $ chmod 644  /etc/rhsm/ca/
