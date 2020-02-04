@@ -1272,12 +1272,13 @@ tmpfs                                             3.9G     0  3.9G   0% /proc/sc
 tmpfs                                             3.9G     0  3.9G   0% /sys/firmware
 
 $ oc delete project persistent-storage-test
-
 ```
 
 
-* LAB, Do the same in your lab
+### LAB, Do the same in your lab
 
+
+```bash
 Hints:
 
 1.- Configure NFS server in your lab:
@@ -1310,7 +1311,7 @@ EOF
 
 2.- As admin, create PV as httpd-volume.yml (we do not have dynamic provisioning)
 3.- Execute the procesure
-
+```
 
 
 
