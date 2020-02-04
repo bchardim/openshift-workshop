@@ -1496,7 +1496,6 @@ master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
 master$ sudo cp -aR /etc/origin ${MYBACKUPDIR}/etc
 master$ sudo cp -aR /etc/sysconfig/ ${MYBACKUPDIR}/etc/sysconfig/
 ```
-
 ```bash
 master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
 master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
@@ -1505,7 +1504,6 @@ master$ sudo cp -aR /etc/sysconfig/{iptables,docker-*,flanneld} ${MYBACKUPDIR}/e
 master$ sudo cp -aR /etc/dnsmasq* /etc/cni ${MYBACKUPDIR}/etc/
 master$ sudo cp -aR /etc/pki/ca-trust/source/anchors/* ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors/
 ```
-
 ```bash
 master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
 master$ sudo mkdir -p ${MYBACKUPDIR}
@@ -1570,6 +1568,21 @@ In many cases, you can back up application data by using the oc rsync command, a
 
 This is a generic backup of application data and does not take into account application-specific backup procedures, for example, special export and import procedures for database systems.
 
+
+* Lets deploy jenkins just to backup its data stored /var/lib/jenkins.
+
+```bash
+$ oc login -u admin
+$ oc new-project jenkins
+$ oc adm policy add-role-to-user admin developer -n jenkins
+$ oc new-app jenkins-persistent --param ENABLE_OAUTH=true --param MEMORY_LIMIT=1Gi --param VOLUME_CAPACITY=1Gi --param DISABLE_ADMINISTRATIVE_MONITORS=true
+$ oc get pvc
+NAME      STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
+jenkins   Bound     pvc-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   1Gi        RWO            glusterfs-storage   15m
+
+$ oc get pods -w
+```
+
 * Get the application data mountPath from the deploymentconfig:
 
 ```bash
@@ -1580,14 +1593,15 @@ $ oc get dc/jenkins -o jsonpath='{ .spec.template.spec.containers[?(@.name=="jen
 * Get the name of the pod that is currently running:
 
 ```bash
-$ oc get pod --selector=deploymentconfig=jenkins -o jsonpath='{ .metadata.name }'
+$ oc get pod -l name=jenkins
 jenkins-1-37nux
 ```
 
 * Use the oc rsync command to copy application data:
 
 ```bash
-$ oc rsync jenkins-1-37nux:/var/lib/jenkins /tmp/
+$ mkdir -p /tmp/jenkins-backup
+$ oc rsync jenkins-1-37nux:/var/lib/jenkins /tmp/jenkins-backup
 ```
 
 ### etcd backup
@@ -1595,8 +1609,8 @@ $ oc rsync jenkins-1-37nux:/var/lib/jenkins /tmp/
 etcd is the key value store for all object definitions, as well as the persistent master state. Other components watch for changes, then bring themselves into the desired state.
 
 ```bash
-$ etcdctl -v
-etcdctl version: 3.2.22
+master$ etcdctl -v
+etcdctl version: 3.2.26
 API version: 2
 ```
 
@@ -1645,7 +1659,7 @@ If etcd runs as a static pod, run the following commands:
 * Check if etcd runs as a static pod.
 
 ```bash
-$ oc get pods -n kube-system | grep etcd
+master$ oc get pods -n kube-system | grep etcd
 srv01.info.net          1/1       Running   0          126d
 srv02.info.net          1/1       Running   4          33d
 srv03.info.net          1/1       Running   2          126d
@@ -1654,27 +1668,34 @@ srv03.info.net          1/1       Running   2          126d
 * Obtain the etcd endpoint IP address from the static pod manifest:
 
 ```bash
-$ export ETCD_POD_MANIFEST="/etc/origin/node/pods/etcd.yaml"
-$ export ETCD_EP=$(grep https ${ETCD_POD_MANIFEST} | cut -d '/' -f3)
+master$ export ETCD_POD_MANIFEST="/etc/origin/node/pods/etcd.yaml"
+master$ export ETCD_EP=$(grep https ${ETCD_POD_MANIFEST} | cut -d '/' -f3)
+master$ echo $ETCD_EP
+10.0.92.35:2379
 ```
 
 * Get etcd pod name:
 
 ```bash
-$ oc login -u system:admin
-$ export ETCD_POD=$(oc get pods -n kube-system | grep -o -m 1 '\S*etcd\S*')
+master$ oc login -u system:admin
+master$ export ETCD_POD=$(oc get pods -n kube-system | grep -o -m 1 '\S*etcd\S*')
+master$ echo $ETCD_POD
+master-etcd-srv01.info.net
 ```
 
 * Take a snapshot of the etcd data in the pod and store it locally:
 
 ```bash
-$ oc project kube-system
-$ oc exec ${ETCD_POD} -c etcd -- /bin/bash -c "ETCDCTL_API=3 etcdctl \
+master$ oc project kube-system
+master$ oc exec ${ETCD_POD} -c etcd -- /bin/bash -c "ETCDCTL_API=3 etcdctl \
     --cert /etc/etcd/peer.crt \
     --key /etc/etcd/peer.key \
     --cacert /etc/etcd/ca.crt \
     --endpoints $ETCD_EP \
     snapshot save /var/lib/etcd/snapshot.db"
+
+master$  ls -lrth /var/lib/etcd/snapshot.db
+-rw-r--r--. 1 root root 32M Feb  4 09:15 /var/lib/etcd/snapshot.db
 ```
 
 If it is saved in the /var/lib/etcd folder, it is the same as saving it on the master machine where it runs, since it has that host folder mounted where the pod is running
@@ -1687,47 +1708,33 @@ Creating a backup of all relevant data involves exporting all important informat
 * List all the relevant data to back up in the target project (myproject in this case):
 
 ```bash
-$ oc project myproject
+$ oc project jenkins
 $ oc get all
-NAME         TYPE      FROM      LATEST
-bc/ruby-ex   Source    Git       1
+NAME                   READY     STATUS    RESTARTS   AGE
+pod/jenkins-1-deploy   0/1       Error     0          16m
 
-NAME               TYPE      FROM          STATUS     STARTED         DURATION
-builds/ruby-ex-1   Source    Git@c457001   Complete   2 minutes ago   35s
+NAME                              DESIRED   CURRENT   READY     AGE
+replicationcontroller/jenkins-1   0         0         0         16m
 
-NAME                 DOCKER REPO                                     TAGS      UPDATED
-is/guestbook         10.111.255.221:5000/myproject/guestbook         latest    2 minutes ago
-is/hello-openshift   10.111.255.221:5000/myproject/hello-openshift   latest    2 minutes ago
-is/ruby-22-centos7   10.111.255.221:5000/myproject/ruby-22-centos7   latest    2 minutes ago
-is/ruby-ex           10.111.255.221:5000/myproject/ruby-ex           latest    2 minutes ago
+NAME                                                             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)     AGE
+service/glusterfs-dynamic-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   ClusterIP   10.255.63.18     <none>        1/TCP       16m
+service/jenkins                                                  ClusterIP   10.255.144.184   <none>        80/TCP      16m
+service/jenkins-jnlp                                             ClusterIP   10.255.162.64    <none>        50000/TCP   16m
 
-NAME                 REVISION   DESIRED   CURRENT   TRIGGERED BY
-dc/guestbook         1          1         1         config,image(guestbook:latest)
-dc/hello-openshift   1          1         1         config,image(hello-openshift:latest)
-dc/ruby-ex           1          1         1         config,image(ruby-ex:latest)
+NAME                                         REVISION   DESIRED   CURRENT   TRIGGERED BY
+deploymentconfig.apps.openshift.io/jenkins   1          1         0         config,image(jenkins:2)
 
-NAME                   DESIRED   CURRENT   READY     AGE
-rc/guestbook-1         1         1         1         2m
-rc/hello-openshift-1   1         1         1         2m
-rc/ruby-ex-1           1         1         1         2m
-
-NAME                  CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
-svc/guestbook         10.111.105.84    <none>        3000/TCP            2m
-svc/hello-openshift   10.111.230.24    <none>        8080/TCP,8888/TCP   2m
-svc/ruby-ex           10.111.232.117   <none>        8080/TCP            2m
-
-NAME                         READY     STATUS      RESTARTS   AGE
-po/guestbook-1-c010g         1/1       Running     0          2m
-po/hello-openshift-1-4zw2q   1/1       Running     0          2m
-po/ruby-ex-1-build           0/1       Completed   0          2m
-po/ruby-ex-1-rxc74           1/1       Running     0          2m
+NAME                               HOST/PORT                                  PATH      SERVICES   PORT      TERMINATION     WILDCARD
+route.route.openshift.io/jenkins   jenkins-jenkins.apps.info.net ... 1 more             jenkins    <all>     edge/Redirect   None
 ```
 
 
 * Export the project objects to a .yaml files.
 
 ```bash
-$ oc get -o yaml --export all > project.yaml
+$ mkdir -p /tmp/jenkins && cd /tmp/jenkins
+$ oc get -o yaml --export all > /tmp/jenkins.yaml
+$ less /tmp/jenkins.yaml
 ```
 
 * Export the project’s role bindings, secrets, service accounts, and persistent volume claims:
@@ -1737,6 +1744,28 @@ $ for object in rolebindings serviceaccounts secrets imagestreamtags cm egressne
 do
   oc get -o yaml --export $object > $object.yaml
 done
+
+$ ls -lrt /tmp/jenkins
+total 204
+-rw-rw-r--. 1 quicklab quicklab  18604 Feb  4 09:20 jenkins.yaml
+-rw-rw-r--. 1 quicklab quicklab   3833 Feb  4 09:21 rolebindings.yaml
+-rw-rw-r--. 1 quicklab quicklab   2041 Feb  4 09:21 serviceaccounts.yaml
+-rw-rw-r--. 1 quicklab quicklab 116094 Feb  4 09:21 secrets.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 imagestreamtags.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 cm.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 egressnetworkpolicies.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 rolebindingrestrictions.yaml
+-rw-rw-r--. 1 quicklab quicklab    749 Feb  4 09:21 limitranges.yaml
+-rw-rw-r--. 1 quicklab quicklab    711 Feb  4 09:21 resourcequotas.yaml
+-rw-rw-r--. 1 quicklab quicklab   1040 Feb  4 09:21 pvc.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 templates.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 cronjobs.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 statefulsets.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 hpa.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 deployments.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 replicasets.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 poddisruptionbudget.yaml
+-rw-rw-r--. 1 quicklab quicklab   1367 Feb  4 09:21 endpoints.yaml
 ```
 
 * To list all the namespaced objects:
