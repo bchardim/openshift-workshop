@@ -2233,7 +2233,7 @@ MySQL [(none)]> show databases;
 5 rows in set (0.01 sec)
 ```
 
-### LAB, Do the same in your lab
+### LAB, Do the same in your lab.
 
 
 ### ConfigMap Objects
@@ -2393,6 +2393,8 @@ $ cat /redis-master/..data/redis.conf
 maxmemory 2mb
 maxmemory-policy allkeys-lru
 ```
+
+### LAB, Do the same in your lab.
 
 
 ### Limiting Resource Usage
