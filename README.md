@@ -173,7 +173,17 @@ parameters:
 - name: PROJECT_REQUESTING_USER
 ```
 
-* Run Openshift healthchek to verify the installation. (see next session).
+* Openshift quick upgrade verify.
+
+```bash
+$ oc get nodes
+$ oc get pods -n kube-system
+$ oc get pods --all-namespaces
+$ oc get pvc --all-namespaces
+$ oc get pv
+```
+
+* Run Openshift 3.11 HealthCheck procedure. (See next section).
 
 
 ### Note
@@ -1287,7 +1297,7 @@ $ bash -x /tmp/create_nfs.sh
 3.- Execute the procedure.
 ```
 
-**Using NFS as backend storage for Openshift is not recommened, here it is being used for teaching purpose.**
+**Using NFS as backend storage for Openshift is NOT recommened, here it is being used for teaching purpose only.**
 
 
 ### Troubleshooting OCS3 independent mode
@@ -2202,7 +2212,7 @@ $ oc logs -f phpmyadmin-2-vzddk
 
 Hint: 
 
-Not needed to push the image on your local registry, you can execute:
+Not needed to push the image on your local registry:
 
 ```bash
 $ oc new-app --name=phpmyadmin docker.io/phpmyadmin/phpmyadmin:4.7
@@ -3043,7 +3053,7 @@ Then install Openshift 3.11 local cluster using 'oc cluster up' command as expla
 
 https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
-
+!!!
 ### Solution
 
 
@@ -3132,6 +3142,7 @@ laptop$ vi /etc/hosts
 
 laptop$ browse http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 ```
+!!!
 
 
 <br><br><br>
