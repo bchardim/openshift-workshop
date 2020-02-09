@@ -24,7 +24,7 @@ https://docs.openshift.com/container-platform/3.11/welcome/index.html
 **[Openshift 3.11 Monitoring with Prometheus and Grafana](#openshift-311-monitoring-with-prometheus-and-grafana)**<br>
 **[Openshift 3.11 Backup](#openshift-311-backup)**<br>
 **[Openshift 3.11 Upgrade](#openshift-311-upgrade)**<br>
-**[Openshift 3.11 Local Cluster](#openshift-3.11-local-cluster)**<br>
+**[Openshift 3.11 Local Cluster](#openshift-311-local-cluster)**<br>
 **[Openshift 3.11 CLI](#openshift-311-cli)**<br>
 
 
