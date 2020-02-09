@@ -2,17 +2,17 @@
 
 ## Project Title
 
-Day 2 Operations for Openshift 3
+Day 2 Operations for Openshift 3.11
 
 ## Disclaimer
 
-**This is a reference manual for day 2 operations on Openshift 3 for didactic use only so it is not expected to use it for production environments.** 
+**This is a reference manual for day 2 operations on Openshift 3.11 for didactic use only so it is not expected to use it for production environments.** 
 **Please use the latest official documentation instead for production usage. Changes in the procedures can appear on each specific release.**
 
 https://docs.openshift.com/container-platform/3.11/welcome/index.html   
 
 <br><br><br>
-## Openshift 3 Architecture
+## Openshift 3.11 Architecture
 
 The following workshop applies for a test Red Hat Openshift Container Platform  3.11 cluster using OCS 3.11 with gluster in independent mode.
 Red Hat OpenShift Container Platform is a container application platform based on Red Hat Enterprise Linux, containers, and Kubernetes:
@@ -59,161 +59,133 @@ glusterfs-storage-block       gluster.org/glusterblock-glusterfs   20h
 
 
 <br><br><br>
-## Openshift 3 Upgrade
+## Openshift 3.11 Install
 
 ### Official Documentation
 
-https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-config-upgrading-strategy-inplace
-
-* Make sure that you have a full backup of the cluster before upgrading it.
+https://docs.openshift.com/container-platform/3.11/install/index.html
 
 
-* Check Openshift version before upgrade.
+* Make sure that all your infrastructure and nodes meet the prerequisites.
+
+https://docs.openshift.com/container-platform/3.11/install/prerequisites.html
+
+
+* From bastion host, install openshift-ansible rpm.
 
 ```bash
-$ curl -k https://srv01.info.net:443/version
-{
-  "major": "1",
-  "minor": "11+",
-  "gitVersion": "v1.11.0+d4cacc0",
-  "gitCommit": "d4cacc0",
-  "gitTreeState": "clean",
-  "buildDate": "2019-12-02T08:30:15Z",
-  "goVersion": "go1.10.8",
-  "compiler": "gc",
-  "platform": "linux/amd64"
-}
-
-$ oc get -n default dc/docker-registry -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.157", 
-
-$ oc get -n default dc/router-apps -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.157",
+$ yum -y install openshift-ansible
 ```
 
-* On bastion node update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
+* From bastion host, compose the ansible inventory host file that matches your deployment.
+
+https://docs.openshift.com/container-platform/3.11/install/configuring_inventory_file.html
 
 ```bash
-$ yum update -y openshift-ansible
-$ rpm -q openshift-ansible
-openshift-ansible-3.11.161-2.git.5.029d67f.el7.noarch
+$ vi /path/to/hosts
+$ export INVENTORY=/path/to/hosts 
 ```
 
-* On bastion node modify cluster inventory in order to reflect the new package and image versions.
+* From bastion host, run prerequisites playbook.
 
 ```bash
-$ cat hosts
-openshift_pkg_version="-3.11.157"
-openshift_image_tag="v3.11.157"
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/prerequisites.yml
+```
+
+* From bastion host, run installation playbook.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/deploy_cluster.yml
+```
+
+* From bastion host, fetch kubeadmin credentials.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible -i ${INVENTORY} masters[0] -b -m fetch -a "src=/root/.kube/config dest=~/.kube/config flat=yes"
+```
+
+* From bastion host, give to user admin cluster wide admin permission. 
+
+```bash
+$ oc adm policy add-cluster-role-to-user cluster-admin admin
+```
+
+* From bastion host, deploy logging stack.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} -e openshift_logging_install_logging=True playbooks/openshift-logging/config.yml 
+```
+
+* From bastion host, deploy metrics stack.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} -e openshift_metrics_install_metrics=True playbooks/openshift-metrics/config.yml
+```
+
+* Create default project template.
+
+In order to create default quotas and limit ranges for new projects, specific values for CPU and memory cat been added to the default project template.
+
+```bash
+$ oc login -u admin
+$ oc adm create-bootstrap-project-template -o yaml > /tmp/template.yaml
+$ vi /tmp/template.yaml
 ...
-openshift_metrics_image_version=v3.11.157
-openshift_logging_image_version=v3.11.157
-openshift_service_catalog_image_version=v3.11.157
-...
-openshift_web_console_version="v3.11.157"
-openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.157
+- apiVersion: v1
+  kind: ResourceQuota
+  metadata:
+    name: ${PROJECT_NAME}-default-quota
+  spec:
+    hard:
+      pods: "10"
+      requests.storage: 20Gi
+      limits.cpu: "2"
+      limits.memory: 8Gi
+- apiVersion: v1
+  kind: LimitRange
+  metadata:
+    name: ${PROJECT_NAME}-default-limits
+    creationTimestamp: null
+  spec:
+    limits:
+      - type: Pod
+        max:
+          cpu: "1"
+          memory: 1Gi
+        min:
+          cpu: 10m
+          memory: 5Mi
+      - type: Container
+        max:
+          cpu: "1"
+          memory: 1Gi
+        min:
+          cpu: 10m
+          memory: 5Mi
+        default:
+          cpu: 250m
+          memory: 256Mi
+parameters:
+- name: PROJECT_NAME
+- name: PROJECT_DISPLAYNAME
+- name: PROJECT_DESCRIPTION
+- name: PROJECT_ADMIN_USER
+- name: PROJECT_REQUESTING_USER
 ```
 
-Change 3.11.157 to 3.11.161
+* Run Openshift healthchek to verify the installation. (see next session).
 
 
-* On bastion node export ansible inventory file updated that matches the Openshift cluster.
+### Note
 
-```bash
-$ export INVENTORY=/path/to/hosts_upgrade
-```
+* If installation fails follow this procedure.
 
-* **If using external gluster cluster provisioned during the install**, comment that nodes from the inventory used to upgrade the cluster:
+https://docs.openshift.com/container-platform/3.11/install/running_install.html#advanced-retrying-installation
 
-```bash
-[glusterfs]
-### IND MODE
-#srv04.info.net glusterfs_ip=10.0.91.52  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
-#srv05.info.net glusterfs_ip=10.0.91.45  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
-#srv06.info.net glusterfs_ip=10.0.91.116 glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
-```
-
-* Check all cluster nodes have attached only the required rpm chanels.
-
-```bash
-rhel-7-server-ansible-2.6-rpms/x86_64
-rhel-7-server-extras-rpms/x86_64
-rhel-7-server-ose-3.11-rpms/x86_64
-rhel-7-server-rpms/7Server/x86_64         
-```
-
-```bash
-$ ansible all -i ${INVENTORY} -m shell -a 'yum clean all && yum repolist'
-```
-
-* Check all cluster nodes have sufficient free space.
-
-```bash
-$ ansible all -i ${INVENTORY} -m shell -a 'df -h'
-```
-
-*  From bastion node validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
-
-```bash
-master$ oc adm migrate storage --include=* --loglevel=2 --confirm --config /etc/origin/master/admin.kubeconfig
-```
-
-* From bastion node upgrade the control plane.
-
-```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
-```
-
-* From bastion node upgrade worker nodes.
-
-```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
-```
-
-* From bastion node upgrade infra nodes.
-
-```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
-```
-
-* Check Openshift version after upgrade.
-
-```bash
-$ curl -k https://srv01.info.net:443/version
-{
-  "major": "1",
-  "minor": "11+",
-  "gitVersion": "v1.11.0+d4cacc0",
-  "gitCommit": "d4cacc0",
-  "gitTreeState": "clean",
-  "buildDate": "2019-12-24T05:49:02Z",
-  "goVersion": "go1.10.8",
-  "compiler": "gc",
-  "platform": "linux/amd64"
-}
-
-$ oc get -n default dc/docker-registry -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.161",
-
-$ oc get -n default dc/router-apps -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.161",
-```
-
-* Quick upgrade verify.
-
-```bash
-$ oc get nodes
-$ oc get pods -n kube-system
-$ oc get pods --all-namespaces
-$ oc get pvc --all-namespaces
-$ oc get pv
-```
-
-* Run Openshift 3 HealthCheck procedure (see next section).
 
 
 <br><br><br>
-## Openshift 3 HealthCheck
+## Openshift 3.11 HealthCheck
 
 ### Official Documentation
 
@@ -754,7 +726,7 @@ $ ansible -i ${INVENTORY} all --limit nodes  -m shell -a "/usr/bin/openshift ver
 
 
 <br><br><br>
-## Openshift 3 Certificates
+## Openshift 3.11 Certificates
 
 ### Official Documentation
 
@@ -1097,7 +1069,7 @@ https://docs.openshift.com/container-platform/3.11/scaling_performance/managing_
 
 
 <br><br><br>
-## Openshift 3 Storage
+## Openshift 3.11 Storage
 
 ### Official Documentation
 
@@ -1477,7 +1449,7 @@ Cluster Id: 6e96721f0e68b678cf89b19d2c5f3330
 
 
 <br><br><br>
-## Openshift 3 Backup
+## Openshift 3.11 Backup
 
 ### Official Documentation
 
@@ -1781,9 +1753,162 @@ $ oc delete project jenkins
 ```
 
 
+<br><br><br>
+## Openshift 3.11 Upgrade
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-config-upgrading-strategy-inplace
+
+* Make sure that you have a full backup of the cluster before upgrading it.
+
+
+* Check Openshift version before upgrade.
+
+```bash
+$ curl -k https://srv01.info.net:443/version
+{
+  "major": "1",
+  "minor": "11+",
+  "gitVersion": "v1.11.0+d4cacc0",
+  "gitCommit": "d4cacc0",
+  "gitTreeState": "clean",
+  "buildDate": "2019-12-02T08:30:15Z",
+  "goVersion": "go1.10.8",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+$ oc get -n default dc/docker-registry -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.157", 
+
+$ oc get -n default dc/router-apps -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.157",
+```
+
+* On bastion node update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
+
+```bash
+$ yum update -y openshift-ansible
+$ rpm -q openshift-ansible
+openshift-ansible-3.11.161-2.git.5.029d67f.el7.noarch
+```
+
+* On bastion node modify cluster inventory in order to reflect the new package and image versions.
+
+```bash
+$ cat hosts
+openshift_pkg_version="-3.11.157"
+openshift_image_tag="v3.11.157"
+...
+openshift_metrics_image_version=v3.11.157
+openshift_logging_image_version=v3.11.157
+openshift_service_catalog_image_version=v3.11.157
+...
+openshift_web_console_version="v3.11.157"
+openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.157
+```
+
+Change 3.11.157 to 3.11.161
+
+
+* On bastion node export ansible inventory file updated that matches the Openshift cluster.
+
+```bash
+$ export INVENTORY=/path/to/hosts_upgrade
+```
+
+* **If using external gluster cluster provisioned during the install**, comment that nodes from the inventory used to upgrade the cluster:
+
+```bash
+[glusterfs]
+### IND MODE
+#srv04.info.net glusterfs_ip=10.0.91.52  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+#srv05.info.net glusterfs_ip=10.0.91.45  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+#srv06.info.net glusterfs_ip=10.0.91.116 glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+```
+
+* Check all cluster nodes have attached only the required rpm chanels.
+
+```bash
+rhel-7-server-ansible-2.6-rpms/x86_64
+rhel-7-server-extras-rpms/x86_64
+rhel-7-server-ose-3.11-rpms/x86_64
+rhel-7-server-rpms/7Server/x86_64         
+```
+
+```bash
+$ ansible all -i ${INVENTORY} -m shell -a 'yum clean all && yum repolist'
+```
+
+* Check all cluster nodes have sufficient free space.
+
+```bash
+$ ansible all -i ${INVENTORY} -m shell -a 'df -h'
+```
+
+*  From bastion node validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
+
+```bash
+master$ oc adm migrate storage --include=* --loglevel=2 --confirm --config /etc/origin/master/admin.kubeconfig
+```
+
+* From bastion node upgrade the control plane.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
+```
+
+* From bastion node upgrade worker nodes.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
+```
+
+* From bastion node upgrade infra nodes.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
+```
+
+* Check Openshift version after upgrade.
+
+```bash
+$ curl -k https://srv01.info.net:443/version
+{
+  "major": "1",
+  "minor": "11+",
+  "gitVersion": "v1.11.0+d4cacc0",
+  "gitCommit": "d4cacc0",
+  "gitTreeState": "clean",
+  "buildDate": "2019-12-24T05:49:02Z",
+  "goVersion": "go1.10.8",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+$ oc get -n default dc/docker-registry -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.161",
+
+$ oc get -n default dc/router-apps -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.161",
+```
+
+* Quick upgrade verify.
+
+```bash
+$ oc get nodes
+$ oc get pods -n kube-system
+$ oc get pods --all-namespaces
+$ oc get pvc --all-namespaces
+$ oc get pv
+```
+
+* Run Openshift 3.11 HealthCheck procedure.
+
 
 <br><br><br>
-## Openshift 3 Resources 
+## Openshift 3.11 Resources 
 
 ### Official Documentation
 
@@ -2699,7 +2824,7 @@ Hint: Use centos/httpd-24-centos7 image from docker.io
 
 
 <br><br><br>
-## Openshift 3 Logging with ELK
+## Openshift 3.11 Logging with ELK
 
 ### Official Documentation
 
@@ -2763,7 +2888,7 @@ logging-kibana   logging.apps.info.net ... 1 more             logging-kibana   <
 ```
 
 <br><br><br>
-## Openshift 3 Metrics
+## Openshift 3.11 Metrics
 
 ### Official Documentation
 
@@ -2813,7 +2938,7 @@ hawkular-metrics   metrics.apps.info.net ... 1 more             hawkular-metrics
 
 
 <br><br><br>
-## Openshift 3 Monitoring with Prometheus and Grafana
+## Openshift 3.11 Monitoring with Prometheus and Grafana
 
 ### Official Documentation
 
@@ -3010,7 +3135,7 @@ laptop$ browse http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 
 
 <br><br><br>
-## Openshift 3 CLI
+## Openshift 3.11 CLI
 
 ### Official Documentation
 
@@ -3132,6 +3257,12 @@ $ oc scale dc/hello --replicas=5
 ```
 
 ### Troubleshooting
+
+* Cluster load
+
+```bash
+$ oc adm top node
+```
 
 * 'oc rsh' command opens a remote shell session to a container. This is useful for logging in and investigating issues in a running container.
 
