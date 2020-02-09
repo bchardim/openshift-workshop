@@ -13,10 +13,10 @@ https://docs.openshift.com/container-platform/3.11/welcome/index.html
 
 ## Table of Contents
 **[Openshift 3.11 Architecture](#openshift-311-architecture)**<br>
-**[Openshift 3.11 Install](#openshift-311-architecture)**<br>
-**[Openshift 3.11 HealthCheck](#openshift-311-openshift-311-healthcheck)**<br>
+**[Openshift 3.11 Install](#openshift-311-install)**<br>
+**[Openshift 3.11 HealthCheck](#openshift-311-healthcheck)**<br>
 **[Openshift 3.11 Certificates](#openshift-311-certificates)**<br>
-**[Openshift 3.11 Scaling and Performance](#openshift-311-scaling-and-performance)**<br>
+**[Openshift 3.11 Scaling and Performance](#openshift-311--scaling-and-performance)**<br>
 **[Openshift 3.11 Storage](#openshift-311-storage)**<br>
 **[Openshift 3.11 Resources](#openshift-311-resources)**<br>
 **[Openshift 3.11 Logging with ELK](#openshift-311-logging-with-elk)**<br>
@@ -3049,7 +3049,7 @@ $ oc get pv
 
 
 <br><br><br>
-## Local Cluster 
+## Openshift 3.11 Local Cluster 
 
 ### Official Documentation
 
