@@ -13,11 +13,19 @@ https://docs.openshift.com/container-platform/3.11/welcome/index.html
 
 ## Table of Contents
 **[Openshift 3.11 Architecture](#openshift-311-architecture)**<br>
-
-
-
-
-
+**[Openshift 3.11 Install](#openshift-311-architecture)**<br>
+**[Openshift 3.11 HealthCheck](#openshift-311-openshift-311-healthcheck)**<br>
+**[Openshift 3.11 Certificates](#openshift-311-certificates)**<br>
+**[Openshift 3.11 Scaling and Performance](#openshift-311-scaling-and-performance)**<br>
+**[Openshift 3.11 Storage](#openshift-311-storage)**<br>
+**[Openshift 3.11 Resources](#openshift-311-resources)**<br>
+**[Openshift 3.11 Logging with ELK](#openshift-311-logging-with-elk)**<br>
+**[Openshift 3.11 Metrics](#openshift-311-metrics)**<br>
+**[Openshift 3.11 Monitoring with Prometheus and Grafana](#openshift-311-monitoring-with-prometheus-and-grafana)**<br>
+**[Openshift 3.11 Backup](#openshift-311-backup)**<br>
+**[Openshift 3.11 Upgrade](#openshift-311-upgrade)**<br>
+**[Openshift 3.11 Local Cluster](#openshift-3.11-local-cluster)**<br>
+**[Openshift 3.11 CLI](#openshift-311-cli)**<br>
 
 
 <br><br><br>
@@ -876,7 +884,7 @@ $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} /u
 ```
 
 <br><br><br>
-## Scaling and Performance
+## Openshift 3.11  Scaling and Performance
 
 ### Official Documentation
 
@@ -1465,465 +1473,6 @@ Cluster Id: 6e96721f0e68b678cf89b19d2c5f3330
     Volumes:
 ...
 ```
-
-
-<br><br><br>
-## Openshift 3.11 Backup
-
-### Official Documentation
-
-https://docs.openshift.com/container-platform/3.11/day_two_guide/environment_backup.html
-
-
-### Master backup
-
-It is recomended to execute the backup procedure before any significant Openshift cluster infrastructure change as an upgrade.
-
-* On each master node make a backup of the critical files:
-
-```bash
-master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
-master$ sudo cp -aR /etc/origin ${MYBACKUPDIR}/etc
-master$ sudo cp -aR /etc/sysconfig/ ${MYBACKUPDIR}/etc/sysconfig/
-```
-```bash
-master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
-master$ sudo mkdir -p ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors
-master$ sudo cp -aR /etc/sysconfig/{iptables,docker-*,flanneld} ${MYBACKUPDIR}/etc/sysconfig/
-master$ sudo cp -aR /etc/dnsmasq* /etc/cni ${MYBACKUPDIR}/etc/
-master$ sudo cp -aR /etc/pki/ca-trust/source/anchors/* ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors/
-```
-```bash
-master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-master$ sudo mkdir -p ${MYBACKUPDIR}
-master$ rpm -qa | sort | sudo tee $MYBACKUPDIR/packages.txt
-```
-
-* If needed backup can be compressed:
-
-```bash
-master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-master$ sudo tar -zcvf /backup/$(hostname)-$(date +%Y%m%d).tar.gz $MYBACKUPDIR
-master$ sudo rm -Rf ${MYBACKUPDIR}
-```
-
-### Node backup
-
-Creating a backup of a node host is a different use case from backing up a master host. Because master hosts contain many important files, creating a backup is highly recommended. However, the nature of nodes is that anything special is replicated over the nodes in case of failover, and they typically do not contain data that is necessary to run an environment. If a backup of a node contains something necessary to run an environment, then a creating a backup is recommended.
-
-On each node run the following procedure:
-
-* Node config files backup
-
-```bash
-node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-node$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
-node$ sudo cp -aR /etc/origin ${MYBACKUPDIR}/etc
-node$ sudo cp -aR /etc/sysconfig/atomic-openshift-node ${MYBACKUPDIR}/etc/sysconfig/
-```
-
-```bash
-node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-node$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
-node$ sudo mkdir -p ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors
-node$ sudo cp -aR /etc/sysconfig/{iptables,docker-*,flanneld} ${MYBACKUPDIR}/etc/sysconfig/
-node$ sudo cp -aR /etc/dnsmasq* /etc/cni ${MYBACKUPDIR}/etc/
-node$ sudo cp -aR /etc/pki/ca-trust/source/anchors/* ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors/
-```
-
-```bash
-node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-node$ sudo mkdir -p ${MYBACKUPDIR}
-node$ rpm -qa | sort | sudo tee $MYBACKUPDIR/packages.txt
-```
-
-* If needed backup can be compressed:
-
-```bash
-node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
-node$ sudo tar -zcvf /backup/$(hostname)-$(date +%Y%m%d).tar.gz $MYBACKUPDIR
-node$ sudo rm -Rf ${MYBACKUPDIR}
-```
-
-### Ansible inventory and instalaton files backup
-
-It is recommended to keep a backup of ansible inventory and installation files used on the bastion host when installing the cluster. These files will be needed during the whole openshift livecycle.
-Use git in order to track changes in these files.
-
-
-### Application data backup
-
-In many cases, you can back up application data by using the oc rsync command, assuming rsync is installed within the container image. The Red Hat rhel7 base image contains rsync. Therefore, all images that are based on rhel7 contain it as well.
-
-This is a generic backup of application data and does not take into account application-specific backup procedures, for example, special export and import procedures for database systems.
-
-
-* Lets deploy jenkins just to backup its data stored /var/lib/jenkins.
-
-```bash
-$ oc login -u admin
-$ oc new-project jenkins
-$ oc adm policy add-role-to-user admin developer -n jenkins
-$ oc new-app jenkins-persistent --param ENABLE_OAUTH=true --param MEMORY_LIMIT=1Gi --param VOLUME_CAPACITY=2Gi --param DISABLE_ADMINISTRATIVE_MONITORS=true
-$ oc get pvc
-NAME      STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
-jenkins   Bound     pvc-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   2Gi        RWO            glusterfs-storage   15m
-
-$ oc get pods -w
-```
-
-* Get the application data mountPath from the deploymentconfig:
-
-```bash
-$ oc get dc/jenkins -o jsonpath='{ .spec.template.spec.containers[?(@.name=="jenkins")].volumeMounts[?(@.name=="jenkins-data")].mountPath }'
-/var/lib/jenkins
-```
-
-* Get the name of the pod that is currently running:
-
-```bash
-$ oc get pod -l name=jenkins
-jenkins-1-37nux
-```
-
-* Use the oc rsync command to copy application data:
-
-```bash
-$ mkdir -p /tmp/jenkins-backup
-$ oc rsync jenkins-1-37nux:/var/lib/jenkins /tmp/jenkins-backup
-```
-
-### etcd backup
-
-etcd is the key value store for all object definitions, as well as the persistent master state. Other components watch for changes, then bring themselves into the desired state.
-
-```bash
-master$ etcdctl -v
-etcdctl version: 3.2.26
-API version: 2
-```
-
-The etcd backup process is composed of two different procedures:
-
-* Configuration backup: Including the required etcd configuration and certificates
-
-* Data backup: Including both v2 and v3 data model.
-
-You can perform the data backup process on any host that has connectivity to the etcd cluster, where the proper certificates are provided, and where the etcdctl tool is installed.
-The backup files must be copied to an external system, ideally outside the OpenShift Container Platform environment, and then encrypted.
-
-
-#### Backing up etcd configuration files
-
-On each master node where etcd cluster is running, execute the following procedure:
-
-```bash
-master$ mkdir -p /backup/etcd-config-$(date +%Y%m%d)/
-master$ cp -R /etc/etcd/ /backup/etcd-config-$(date +%Y%m%d)/
-```
-
-#### Backing up etcd data
-
-Before backing up etcd:
-
-* etcdctl binaries must be available or, in containerized installations, the rhel7/etcd container must be available.
-
-* Ensure that the OpenShift Container Platform API service is running.
-
-* Ensure connectivity with the etcd cluster (port 2379/tcp).
-
-* Ensure the proper certificates to connect to the etcd cluster.
-
-
-```bash
-master$ source /etc/etcd/etcd.conf
-master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
-  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS cluster-health
-master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
-  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS member list
-```
-
-If etcd runs as a static pod, run the following commands:
-
-* Check if etcd runs as a static pod.
-
-```bash
-master$ oc get pods -n kube-system | grep etcd
-srv01.info.net          1/1       Running   0          126d
-srv02.info.net          1/1       Running   4          33d
-srv03.info.net          1/1       Running   2          126d
-```
-
-* Obtain the etcd endpoint IP address from the static pod manifest:
-
-```bash
-master$ export ETCD_POD_MANIFEST="/etc/origin/node/pods/etcd.yaml"
-master$ export ETCD_EP=$(grep https ${ETCD_POD_MANIFEST} | cut -d '/' -f3)
-master$ echo $ETCD_EP
-10.0.92.35:2379
-```
-
-* Get etcd pod name:
-
-```bash
-master$ oc login -u system:admin
-master$ export ETCD_POD=$(oc get pods -n kube-system | grep -o -m 1 '\S*etcd\S*')
-master$ echo $ETCD_POD
-master-etcd-srv01.info.net
-```
-
-* Take a snapshot of the etcd data in the pod and store it locally:
-
-```bash
-master$ oc project kube-system
-master$ oc exec ${ETCD_POD} -c etcd -- /bin/bash -c "ETCDCTL_API=3 etcdctl \
-    --cert /etc/etcd/peer.crt \
-    --key /etc/etcd/peer.key \
-    --cacert /etc/etcd/ca.crt \
-    --endpoints $ETCD_EP \
-    snapshot save /var/lib/etcd/snapshot.db"
-
-master$  ls -lrth /var/lib/etcd/snapshot.db
--rw-r--r--. 1 root root 32M Feb  4 09:15 /var/lib/etcd/snapshot.db
-```
-
-If it is saved in the /var/lib/etcd folder, it is the same as saving it on the master machine where it runs, since it has that host folder mounted where the pod is running
-
-
-### Project backup
-
-Creating a backup of all relevant data involves exporting all important information, then restoring into a new project if needed.
-
-* List all the relevant data to back up in the target project (jenkins in this case):
-
-```bash
-$ oc project jenkins
-$ oc get all
-NAME                   READY     STATUS    RESTARTS   AGE
-pod/jenkins-1-deploy   0/1       Error     0          16m
-
-NAME                              DESIRED   CURRENT   READY     AGE
-replicationcontroller/jenkins-1   0         0         0         16m
-
-NAME                                                             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)     AGE
-service/glusterfs-dynamic-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   ClusterIP   10.255.63.18     <none>        1/TCP       16m
-service/jenkins                                                  ClusterIP   10.255.144.184   <none>        80/TCP      16m
-service/jenkins-jnlp                                             ClusterIP   10.255.162.64    <none>        50000/TCP   16m
-
-NAME                                         REVISION   DESIRED   CURRENT   TRIGGERED BY
-deploymentconfig.apps.openshift.io/jenkins   1          1         0         config,image(jenkins:2)
-
-NAME                               HOST/PORT                                  PATH      SERVICES   PORT      TERMINATION     WILDCARD
-route.route.openshift.io/jenkins   jenkins-jenkins.apps.info.net ... 1 more             jenkins    <all>     edge/Redirect   None
-```
-
-
-* Export the project objects to a .yaml files.
-
-```bash
-$ mkdir -p /tmp/jenkins && cd /tmp/jenkins
-$ oc get -o yaml --export all > /tmp/jenkins.yaml
-$ less /tmp/jenkins.yaml
-```
-
-* Export the project’s role bindings, secrets, service accounts, and persistent volume claims:
-
-```bash
-$ for object in rolebindings serviceaccounts secrets imagestreamtags cm egressnetworkpolicies rolebindingrestrictions limitranges resourcequotas pvc templates cronjobs statefulsets hpa deployments replicasets poddisruptionbudget endpoints
-do
-  oc get -o yaml --export $object > $object.yaml
-done
-
-$ ls -lrt /tmp/jenkins
-total 204
--rw-rw-r--. 1 quicklab quicklab  18604 Feb  4 09:20 jenkins.yaml
--rw-rw-r--. 1 quicklab quicklab   3833 Feb  4 09:21 rolebindings.yaml
--rw-rw-r--. 1 quicklab quicklab   2041 Feb  4 09:21 serviceaccounts.yaml
--rw-rw-r--. 1 quicklab quicklab 116094 Feb  4 09:21 secrets.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 imagestreamtags.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 cm.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 egressnetworkpolicies.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 rolebindingrestrictions.yaml
--rw-rw-r--. 1 quicklab quicklab    749 Feb  4 09:21 limitranges.yaml
--rw-rw-r--. 1 quicklab quicklab    711 Feb  4 09:21 resourcequotas.yaml
--rw-rw-r--. 1 quicklab quicklab   1040 Feb  4 09:21 pvc.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 templates.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 cronjobs.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 statefulsets.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 hpa.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 deployments.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 replicasets.yaml
--rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 poddisruptionbudget.yaml
--rw-rw-r--. 1 quicklab quicklab   1367 Feb  4 09:21 endpoints.yaml
-```
-
-* To list all the namespaced objects:
-
-```bash
-$ oc api-resources --namespaced=true -o name
-```
-
-* Delete jenkins project
-
-```bash
-$ oc delete project jenkins
-```
-
-
-<br><br><br>
-## Openshift 3.11 Upgrade
-
-### Official Documentation
-
-https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-config-upgrading-strategy-inplace
-
-* Make sure that you have a full backup of the cluster before upgrading it.
-
-
-* Check Openshift version before upgrade.
-
-```bash
-$ curl -k https://srv01.info.net:443/version
-{
-  "major": "1",
-  "minor": "11+",
-  "gitVersion": "v1.11.0+d4cacc0",
-  "gitCommit": "d4cacc0",
-  "gitTreeState": "clean",
-  "buildDate": "2019-12-02T08:30:15Z",
-  "goVersion": "go1.10.8",
-  "compiler": "gc",
-  "platform": "linux/amd64"
-}
-
-$ oc get -n default dc/docker-registry -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.157", 
-
-$ oc get -n default dc/router-apps -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.157",
-```
-
-* On bastion node update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
-
-```bash
-$ yum update -y openshift-ansible
-$ rpm -q openshift-ansible
-openshift-ansible-3.11.161-2.git.5.029d67f.el7.noarch
-```
-
-* On bastion node modify cluster inventory in order to reflect the new package and image versions.
-
-```bash
-$ cat hosts
-openshift_pkg_version="-3.11.157"
-openshift_image_tag="v3.11.157"
-...
-openshift_metrics_image_version=v3.11.157
-openshift_logging_image_version=v3.11.157
-openshift_service_catalog_image_version=v3.11.157
-...
-openshift_web_console_version="v3.11.157"
-openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.157
-```
-
-Change 3.11.157 to 3.11.161
-
-
-* On bastion node export ansible inventory file updated that matches the Openshift cluster.
-
-```bash
-$ export INVENTORY=/path/to/hosts_upgrade
-```
-
-* **If using external gluster cluster provisioned during the install**, comment that nodes from the inventory used to upgrade the cluster:
-
-```bash
-[glusterfs]
-### IND MODE
-#srv04.info.net glusterfs_ip=10.0.91.52  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
-#srv05.info.net glusterfs_ip=10.0.91.45  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
-#srv06.info.net glusterfs_ip=10.0.91.116 glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
-```
-
-* Check all cluster nodes have attached only the required rpm chanels.
-
-```bash
-rhel-7-server-ansible-2.6-rpms/x86_64
-rhel-7-server-extras-rpms/x86_64
-rhel-7-server-ose-3.11-rpms/x86_64
-rhel-7-server-rpms/7Server/x86_64         
-```
-
-```bash
-$ ansible all -i ${INVENTORY} -m shell -a 'yum clean all && yum repolist'
-```
-
-* Check all cluster nodes have sufficient free space.
-
-```bash
-$ ansible all -i ${INVENTORY} -m shell -a 'df -h'
-```
-
-*  From bastion node validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
-
-```bash
-master$ oc adm migrate storage --include=* --loglevel=2 --confirm --config /etc/origin/master/admin.kubeconfig
-```
-
-* From bastion node upgrade the control plane.
-
-```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
-```
-
-* From bastion node upgrade worker nodes.
-
-```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
-```
-
-* From bastion node upgrade infra nodes.
-
-```bash
-$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
-```
-
-* Check Openshift version after upgrade.
-
-```bash
-$ curl -k https://srv01.info.net:443/version
-{
-  "major": "1",
-  "minor": "11+",
-  "gitVersion": "v1.11.0+d4cacc0",
-  "gitCommit": "d4cacc0",
-  "gitTreeState": "clean",
-  "buildDate": "2019-12-24T05:49:02Z",
-  "goVersion": "go1.10.8",
-  "compiler": "gc",
-  "platform": "linux/amd64"
-}
-
-$ oc get -n default dc/docker-registry -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.161",
-
-$ oc get -n default dc/router-apps -o json | grep \"image\"
-"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.161",
-```
-
-* Quick upgrade verify.
-
-```bash
-$ oc get nodes
-$ oc get pods -n kube-system
-$ oc get pods --all-namespaces
-$ oc get pvc --all-namespaces
-$ oc get pv
-```
-
-* Run Openshift 3.11 HealthCheck procedure.
 
 
 <br><br><br>
@@ -3038,8 +2587,469 @@ grafana             grafana-openshift-monitoring.apps.info.net ... 1 more       
 prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more                prometheus-k8s      web       reencrypt     None
 ```
 
+
+
 <br><br><br>
-## Local Cluster Management - oc cluster up
+## Openshift 3.11 Backup
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/day_two_guide/environment_backup.html
+
+
+### Master backup
+
+It is recomended to execute the backup procedure before any significant Openshift cluster infrastructure change as an upgrade.
+
+* On each master node make a backup of the critical files:
+
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+master$ sudo cp -aR /etc/origin ${MYBACKUPDIR}/etc
+master$ sudo cp -aR /etc/sysconfig/ ${MYBACKUPDIR}/etc/sysconfig/
+```
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+master$ sudo mkdir -p ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors
+master$ sudo cp -aR /etc/sysconfig/{iptables,docker-*,flanneld} ${MYBACKUPDIR}/etc/sysconfig/
+master$ sudo cp -aR /etc/dnsmasq* /etc/cni ${MYBACKUPDIR}/etc/
+master$ sudo cp -aR /etc/pki/ca-trust/source/anchors/* ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors/
+```
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo mkdir -p ${MYBACKUPDIR}
+master$ rpm -qa | sort | sudo tee $MYBACKUPDIR/packages.txt
+```
+
+* If needed backup can be compressed:
+
+```bash
+master$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+master$ sudo tar -zcvf /backup/$(hostname)-$(date +%Y%m%d).tar.gz $MYBACKUPDIR
+master$ sudo rm -Rf ${MYBACKUPDIR}
+```
+
+### Node backup
+
+Creating a backup of a node host is a different use case from backing up a master host. Because master hosts contain many important files, creating a backup is highly recommended. However, the nature of nodes is that anything special is replicated over the nodes in case of failover, and they typically do not contain data that is necessary to run an environment. If a backup of a node contains something necessary to run an environment, then a creating a backup is recommended.
+
+On each node run the following procedure:
+
+* Node config files backup
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+node$ sudo cp -aR /etc/origin ${MYBACKUPDIR}/etc
+node$ sudo cp -aR /etc/sysconfig/atomic-openshift-node ${MYBACKUPDIR}/etc/sysconfig/
+```
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo mkdir -p ${MYBACKUPDIR}/etc/sysconfig
+node$ sudo mkdir -p ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors
+node$ sudo cp -aR /etc/sysconfig/{iptables,docker-*,flanneld} ${MYBACKUPDIR}/etc/sysconfig/
+node$ sudo cp -aR /etc/dnsmasq* /etc/cni ${MYBACKUPDIR}/etc/
+node$ sudo cp -aR /etc/pki/ca-trust/source/anchors/* ${MYBACKUPDIR}/etc/pki/ca-trust/source/anchors/
+```
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo mkdir -p ${MYBACKUPDIR}
+node$ rpm -qa | sort | sudo tee $MYBACKUPDIR/packages.txt
+```
+
+* If needed backup can be compressed:
+
+```bash
+node$ MYBACKUPDIR=/backup/$(hostname)/$(date +%Y%m%d)
+node$ sudo tar -zcvf /backup/$(hostname)-$(date +%Y%m%d).tar.gz $MYBACKUPDIR
+node$ sudo rm -Rf ${MYBACKUPDIR}
+```
+
+### Ansible inventory and instalaton files backup
+
+It is recommended to keep a backup of ansible inventory and installation files used on the bastion host when installing the cluster. These files will be needed during the whole openshift livecycle.
+Use git in order to track changes in these files.
+
+
+### Application data backup
+
+In many cases, you can back up application data by using the oc rsync command, assuming rsync is installed within the container image. The Red Hat rhel7 base image contains rsync. Therefore, all images that are based on rhel7 contain it as well.
+
+This is a generic backup of application data and does not take into account application-specific backup procedures, for example, special export and import procedures for database systems.
+
+
+* Lets deploy jenkins just to backup its data stored /var/lib/jenkins.
+
+```bash
+$ oc login -u admin
+$ oc new-project jenkins
+$ oc adm policy add-role-to-user admin developer -n jenkins
+$ oc new-app jenkins-persistent --param ENABLE_OAUTH=true --param MEMORY_LIMIT=1Gi --param VOLUME_CAPACITY=2Gi --param DISABLE_ADMINISTRATIVE_MONITORS=true
+$ oc get pvc
+NAME      STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        AGE
+jenkins   Bound     pvc-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   2Gi        RWO            glusterfs-storage   15m
+
+$ oc get pods -w
+```
+
+* Get the application data mountPath from the deploymentconfig:
+
+```bash
+$ oc get dc/jenkins -o jsonpath='{ .spec.template.spec.containers[?(@.name=="jenkins")].volumeMounts[?(@.name=="jenkins-data")].mountPath }'
+/var/lib/jenkins
+```
+
+* Get the name of the pod that is currently running:
+
+```bash
+$ oc get pod -l name=jenkins
+jenkins-1-37nux
+```
+
+* Use the oc rsync command to copy application data:
+
+```bash
+$ mkdir -p /tmp/jenkins-backup
+$ oc rsync jenkins-1-37nux:/var/lib/jenkins /tmp/jenkins-backup
+```
+
+### etcd backup
+
+etcd is the key value store for all object definitions, as well as the persistent master state. Other components watch for changes, then bring themselves into the desired state.
+
+```bash
+master$ etcdctl -v
+etcdctl version: 3.2.26
+API version: 2
+```
+
+The etcd backup process is composed of two different procedures:
+
+* Configuration backup: Including the required etcd configuration and certificates
+
+* Data backup: Including both v2 and v3 data model.
+
+You can perform the data backup process on any host that has connectivity to the etcd cluster, where the proper certificates are provided, and where the etcdctl tool is installed.
+The backup files must be copied to an external system, ideally outside the OpenShift Container Platform environment, and then encrypted.
+
+
+#### Backing up etcd configuration files
+
+On each master node where etcd cluster is running, execute the following procedure:
+
+```bash
+master$ mkdir -p /backup/etcd-config-$(date +%Y%m%d)/
+master$ cp -R /etc/etcd/ /backup/etcd-config-$(date +%Y%m%d)/
+```
+
+#### Backing up etcd data
+
+Before backing up etcd:
+
+* etcdctl binaries must be available or, in containerized installations, the rhel7/etcd container must be available.
+
+* Ensure that the OpenShift Container Platform API service is running.
+
+* Ensure connectivity with the etcd cluster (port 2379/tcp).
+
+* Ensure the proper certificates to connect to the etcd cluster.
+
+
+```bash
+master$ source /etc/etcd/etcd.conf
+master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS cluster-health
+master$ etcdctl --cert-file=$ETCD_PEER_CERT_FILE --key-file=$ETCD_PEER_KEY_FILE \
+  --ca-file=/etc/etcd/ca.crt --endpoints=$ETCD_LISTEN_CLIENT_URLS member list
+```
+
+If etcd runs as a static pod, run the following commands:
+
+* Check if etcd runs as a static pod.
+
+```bash
+master$ oc get pods -n kube-system | grep etcd
+srv01.info.net          1/1       Running   0          126d
+srv02.info.net          1/1       Running   4          33d
+srv03.info.net          1/1       Running   2          126d
+```
+
+* Obtain the etcd endpoint IP address from the static pod manifest:
+
+```bash
+master$ export ETCD_POD_MANIFEST="/etc/origin/node/pods/etcd.yaml"
+master$ export ETCD_EP=$(grep https ${ETCD_POD_MANIFEST} | cut -d '/' -f3)
+master$ echo $ETCD_EP
+10.0.92.35:2379
+```
+
+* Get etcd pod name:
+
+```bash
+master$ oc login -u system:admin
+master$ export ETCD_POD=$(oc get pods -n kube-system | grep -o -m 1 '\S*etcd\S*')
+master$ echo $ETCD_POD
+master-etcd-srv01.info.net
+```
+
+* Take a snapshot of the etcd data in the pod and store it locally:
+
+```bash
+master$ oc project kube-system
+master$ oc exec ${ETCD_POD} -c etcd -- /bin/bash -c "ETCDCTL_API=3 etcdctl \
+    --cert /etc/etcd/peer.crt \
+    --key /etc/etcd/peer.key \
+    --cacert /etc/etcd/ca.crt \
+    --endpoints $ETCD_EP \
+    snapshot save /var/lib/etcd/snapshot.db"
+
+master$  ls -lrth /var/lib/etcd/snapshot.db
+-rw-r--r--. 1 root root 32M Feb  4 09:15 /var/lib/etcd/snapshot.db
+```
+
+If it is saved in the /var/lib/etcd folder, it is the same as saving it on the master machine where it runs, since it has that host folder mounted where the pod is running
+
+
+### Project backup
+
+Creating a backup of all relevant data involves exporting all important information, then restoring into a new project if needed.
+
+* List all the relevant data to back up in the target project (jenkins in this case):
+
+```bash
+$ oc project jenkins
+$ oc get all
+NAME                   READY     STATUS    RESTARTS   AGE
+pod/jenkins-1-deploy   0/1       Error     0          16m
+
+NAME                              DESIRED   CURRENT   READY     AGE
+replicationcontroller/jenkins-1   0         0         0         16m
+
+NAME                                                             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)     AGE
+service/glusterfs-dynamic-f7c30c47-4756-11ea-8db7-fa163eb7bf1b   ClusterIP   10.255.63.18     <none>        1/TCP       16m
+service/jenkins                                                  ClusterIP   10.255.144.184   <none>        80/TCP      16m
+service/jenkins-jnlp                                             ClusterIP   10.255.162.64    <none>        50000/TCP   16m
+
+NAME                                         REVISION   DESIRED   CURRENT   TRIGGERED BY
+deploymentconfig.apps.openshift.io/jenkins   1          1         0         config,image(jenkins:2)
+
+NAME                               HOST/PORT                                  PATH      SERVICES   PORT      TERMINATION     WILDCARD
+route.route.openshift.io/jenkins   jenkins-jenkins.apps.info.net ... 1 more             jenkins    <all>     edge/Redirect   None
+```
+
+
+* Export the project objects to a .yaml files.
+
+```bash
+$ mkdir -p /tmp/jenkins && cd /tmp/jenkins
+$ oc get -o yaml --export all > /tmp/jenkins.yaml
+$ less /tmp/jenkins.yaml
+```
+
+* Export the project’s role bindings, secrets, service accounts, and persistent volume claims:
+
+```bash
+$ for object in rolebindings serviceaccounts secrets imagestreamtags cm egressnetworkpolicies rolebindingrestrictions limitranges resourcequotas pvc templates cronjobs statefulsets hpa deployments replicasets poddisruptionbudget endpoints
+do
+  oc get -o yaml --export $object > $object.yaml
+done
+
+$ ls -lrt /tmp/jenkins
+total 204
+-rw-rw-r--. 1 quicklab quicklab  18604 Feb  4 09:20 jenkins.yaml
+-rw-rw-r--. 1 quicklab quicklab   3833 Feb  4 09:21 rolebindings.yaml
+-rw-rw-r--. 1 quicklab quicklab   2041 Feb  4 09:21 serviceaccounts.yaml
+-rw-rw-r--. 1 quicklab quicklab 116094 Feb  4 09:21 secrets.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 imagestreamtags.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 cm.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 egressnetworkpolicies.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 rolebindingrestrictions.yaml
+-rw-rw-r--. 1 quicklab quicklab    749 Feb  4 09:21 limitranges.yaml
+-rw-rw-r--. 1 quicklab quicklab    711 Feb  4 09:21 resourcequotas.yaml
+-rw-rw-r--. 1 quicklab quicklab   1040 Feb  4 09:21 pvc.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 templates.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 cronjobs.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 statefulsets.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 hpa.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 deployments.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 replicasets.yaml
+-rw-rw-r--. 1 quicklab quicklab     83 Feb  4 09:21 poddisruptionbudget.yaml
+-rw-rw-r--. 1 quicklab quicklab   1367 Feb  4 09:21 endpoints.yaml
+```
+
+* To list all the namespaced objects:
+
+```bash
+$ oc api-resources --namespaced=true -o name
+```
+
+* Delete jenkins project
+
+```bash
+$ oc delete project jenkins
+```
+
+
+<br><br><br>
+## Openshift 3.11 Upgrade
+
+### Official Documentation
+
+https://docs.openshift.com/container-platform/3.11/upgrading/index.html#install-config-upgrading-strategy-inplace
+
+* Make sure that you have a full backup of the cluster before upgrading it.
+
+
+* Check Openshift version before upgrade.
+
+```bash
+$ curl -k https://srv01.info.net:443/version
+{
+  "major": "1",
+  "minor": "11+",
+  "gitVersion": "v1.11.0+d4cacc0",
+  "gitCommit": "d4cacc0",
+  "gitTreeState": "clean",
+  "buildDate": "2019-12-02T08:30:15Z",
+  "goVersion": "go1.10.8",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+$ oc get -n default dc/docker-registry -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.157", 
+
+$ oc get -n default dc/router-apps -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.157",
+```
+
+* On bastion node update ansible playbooks to the desired version that we want to upgrade (latest) on bastion host.
+
+```bash
+$ yum update -y openshift-ansible
+$ rpm -q openshift-ansible
+openshift-ansible-3.11.161-2.git.5.029d67f.el7.noarch
+```
+
+* On bastion node modify cluster inventory in order to reflect the new package and image versions.
+
+```bash
+$ cat hosts
+openshift_pkg_version="-3.11.157"
+openshift_image_tag="v3.11.157"
+...
+openshift_metrics_image_version=v3.11.157
+openshift_logging_image_version=v3.11.157
+openshift_service_catalog_image_version=v3.11.157
+...
+openshift_web_console_version="v3.11.157"
+openshift_console_image_name=registry.redhat.io/openshift3/ose-console:v3.11.157
+```
+
+Change 3.11.157 to 3.11.161
+
+
+* On bastion node export ansible inventory file updated that matches the Openshift cluster.
+
+```bash
+$ export INVENTORY=/path/to/hosts_upgrade
+```
+
+* **If using external gluster cluster provisioned during the install**, comment that nodes from the inventory used to upgrade the cluster:
+
+```bash
+[glusterfs]
+### IND MODE
+#srv04.info.net glusterfs_ip=10.0.91.52  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+#srv05.info.net glusterfs_ip=10.0.91.45  glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+#srv06.info.net glusterfs_ip=10.0.91.116 glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
+```
+
+* Check all cluster nodes have attached only the required rpm chanels.
+
+```bash
+rhel-7-server-ansible-2.6-rpms/x86_64
+rhel-7-server-extras-rpms/x86_64
+rhel-7-server-ose-3.11-rpms/x86_64
+rhel-7-server-rpms/7Server/x86_64         
+```
+
+```bash
+$ ansible all -i ${INVENTORY} -m shell -a 'yum clean all && yum repolist'
+```
+
+* Check all cluster nodes have sufficient free space.
+
+```bash
+$ ansible all -i ${INVENTORY} -m shell -a 'df -h'
+```
+
+*  From bastion node validate OpenShift Container Platform storage migration to ensure potential issues are resolved before the outage window.
+
+```bash
+master$ oc adm migrate storage --include=* --loglevel=2 --confirm --config /etc/origin/master/admin.kubeconfig
+```
+
+* From bastion node upgrade the control plane.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_control_plane.yml
+```
+
+* From bastion node upgrade worker nodes.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/compute=true"
+```
+
+* From bastion node upgrade infra nodes.
+
+```bash
+$ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/byo/openshift-cluster/upgrades/v3_11/upgrade_nodes.yml -e openshift_upgrade_nodes_label="node-role.kubernetes.io/infra=true"
+```
+
+* Check Openshift version after upgrade.
+
+```bash
+$ curl -k https://srv01.info.net:443/version
+{
+  "major": "1",
+  "minor": "11+",
+  "gitVersion": "v1.11.0+d4cacc0",
+  "gitCommit": "d4cacc0",
+  "gitTreeState": "clean",
+  "buildDate": "2019-12-24T05:49:02Z",
+  "goVersion": "go1.10.8",
+  "compiler": "gc",
+  "platform": "linux/amd64"
+}
+
+$ oc get -n default dc/docker-registry -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-docker-registry:v3.11.161",
+
+$ oc get -n default dc/router-apps -o json | grep \"image\"
+"image": "registry.redhat.io/openshift3/ose-haproxy-router:v3.11.161",
+```
+
+* Quick upgrade verify.
+
+```bash
+$ oc get nodes
+$ oc get pods -n kube-system
+$ oc get pods --all-namespaces
+$ oc get pvc --all-namespaces
+$ oc get pv
+```
+
+* Run Openshift 3.11 HealthCheck procedure.
+
+
+<br><br><br>
+## Local Cluster 
 
 ### Official Documentation
 
