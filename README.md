@@ -3038,18 +3038,18 @@ https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
 #### LAB: Install local Openshift 3.11 on Centos7 VM with 'oc cluster up'.
 
-* Using Centos7 DVD:
+Using Centos7 DVD:
 
 http://ftp.rediris.es/mirror/CentOS/7.7.1908/isos/x86_64/CentOS-7-x86_64-Minimal-1908.iso
 
-* Create a VM in your laptop:  
+Create a VM in your laptop:  
 
-- 2vCPUs
-- 4096M RAM
-- 40G disk
-- Internet connectivity
+* 2vCPUs
+* 4096M RAM
+* 40G disk
+* Internet connectivity
 
-* Then install Openshift 3.11 local cluster using 'oc cluster up' command as explained on:
+Then install an Openshift 3.11 local cluster using 'oc cluster up' command as explained on:
 
 https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
