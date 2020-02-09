@@ -103,37 +103,37 @@ $ vi /path/to/hosts
 $ export INVENTORY=/path/to/hosts 
 ```
 
-* From bastion host, run prerequisites playbook.
+* From bastion host run prerequisites playbook.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/prerequisites.yml
 ```
 
-* From bastion host, run installation playbook.
+* From bastion host run installation playbook.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} playbooks/deploy_cluster.yml
 ```
 
-* From bastion host, fetch kubeadmin credentials.
+* From bastion host fetch kubeadmin credentials.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible -i ${INVENTORY} masters[0] -b -m fetch -a "src=/root/.kube/config dest=~/.kube/config flat=yes"
 ```
 
-* From bastion host, give to user admin cluster wide admin permission. 
+* From bastion host give to user admin cluster wide admin permission. 
 
 ```bash
 $ oc adm policy add-cluster-role-to-user cluster-admin admin
 ```
 
-* From bastion host, deploy logging stack.
+* From bastion host deploy logging stack.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} -e openshift_logging_install_logging=True playbooks/openshift-logging/config.yml 
 ```
 
-* From bastion host, deploy metrics stack.
+* From bastion host deploy metrics stack.
 
 ```bash
 $ cd /usr/share/ansible/openshift-ansible && ansible-playbook -i ${INVENTORY} -e openshift_metrics_install_metrics=True playbooks/openshift-metrics/config.yml
@@ -1132,7 +1132,7 @@ A PV is a resource (PersistentVolume API object) which represents a piece of exi
 
 #### PVC, Persistent Volume Claim
 
-PVCs is a resorce (PersistentVolumeClaim API object) which represents a request for storage by a developer.
+PVCs is a resource (PersistentVolumeClaim API object) which represents a request for storage by a developer.
 
 
 #### Persistent Volume Access Modes
@@ -1314,7 +1314,7 @@ $ bash -x /tmp/create_nfs.sh
 3.- Execute the procedure.
 ```
 
-**Using NFS as backend storage for Openshift is NOT recommened, here it is being used for teaching purpose only.**
+**Using NFS as backend storage for Openshift is NOT recommended, here it is being used for teaching purpose only.**
 
 
 ### Troubleshooting OCS3 independent mode
@@ -1830,7 +1830,7 @@ env:
 
 Create a MySQL database container that uses a Secret for storing database authentication credentials.
 
-* As developer create new project mysql. Review secrets requiered on mysql.yml
+* As developer create new project mysql. Review secrets required on mysql.yml
 
 ```bash
 $ oc login -u developer
@@ -2669,7 +2669,7 @@ node$ sudo tar -zcvf /backup/$(hostname)-$(date +%Y%m%d).tar.gz $MYBACKUPDIR
 node$ sudo rm -Rf ${MYBACKUPDIR}
 ```
 
-### Ansible inventory and instalaton files backup
+### Ansible inventory and installation files backup
 
 It is recommended to keep a backup of ansible inventory and installation files used on the bastion host when installing the cluster. These files will be needed during the whole openshift livecycle.
 Use git in order to track changes in these files.
@@ -2969,7 +2969,7 @@ $ export INVENTORY=/path/to/hosts_upgrade
 #srv06.info.net glusterfs_ip=10.0.91.116 glusterfs_devices='[ "/dev/vdb" ]' glusterfs_zone=1
 ```
 
-* Check all cluster nodes have attached only the required rpm chanels.
+* Check all cluster nodes have attached only the required rpm channels.
 
 ```bash
 rhel-7-server-ansible-2.6-rpms/x86_64
