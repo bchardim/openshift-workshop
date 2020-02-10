@@ -1281,7 +1281,7 @@ $ oc expose svc httpd
 $ oc get routes
 NAME      HOST/PORT                                        PATH      SERVICES   PORT       TERMINATION   WILDCARD
 httpd     httpd-persistent-storage-test.apps.info.net                httpd      8080-tcp                 None
-[root@localhost ~]# curl httpd-persistent-storage-test.apps.info.net
+$ curl httpd-persistent-storage-test.apps.info.net
 Hello !!!
 
 $ oc delete project persistent-storage-test
