@@ -3159,9 +3159,17 @@ ruby-ex   ClusterIP   172.30.227.232   <none>        8080/TCP   4m
 c7$ oc expose svc ruby-ex
 c7$ oc get route
 NAME      HOST/PORT                                       PATH      SERVICES   PORT       TERMINATION   WILDCARD
-ruby-ex   ruby-ex-httpd-test.apps.192.168.122.95.nip.io             ruby-ex    8080-tcp                 None
+ruby-ex   ruby-ex-ruby-ex.127.0.0.1.nip.io                          ruby-ex    8080-tcp                 None
+
+c7$ curl -I http://ruby-ex-ruby-ex.127.0.0.1.nip.io
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 39559
+Set-Cookie: 9d323b6e26a804348b5d56f24c79e8e1=1d410fca724ed90eb8fb49ae6d7e76b4; path=/; HttpOnly
+Cache-control: private
  
-c7$ curl http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
+c7$ curl http://ruby-ex-ruby-ex.127.0.0.1.nip.io
+...
 ```
 
 
