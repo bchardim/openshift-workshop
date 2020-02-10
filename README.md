@@ -3084,9 +3084,9 @@ https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 ```bash
 c7$ sysctl -w net.ipv4.ip_forward=1
 c7$ yum -y upgrade
-c7$ yum -y install git docker vim centos-release-openshift-origin311
-c7$ yum -y install origin-clients
+c7$ yum -y install git docker vim wget
 c7$ systemctl start docker && systemctl enable docker 
+c7$ hostnamectl set-hostname localhost
 ```
 
 * Configure Docker daemon 
@@ -3120,13 +3120,17 @@ c7$ firewall-cmd --permanent --add-port=80/tcp --add-port=443/tcp  --add-port=84
 c7$ firewall-cmd --reload
 ```
 
+* Install oc command
+
+c7$ cd /tmp && wget https://github.com/openshift/origin/releases/download/v3.11.0/openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz 
+c7$ cd /tmp && tar -xvzf openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz
+c7$ cp -f openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc /usr/bin/oc
+c7$ cp -f openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/kubectl /usr/bin/kubectl
+
 * Run Openshift local cluster on public interface
 
 ```bash
-c7$ hostname --ip-address
-192.168.122.95
-c7$ mkdir -p /openshift3
-c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --routing-suffix apps.192.168.122.95.nip.io --loglevel=8
+c7$ oc cluster up
 ```
 
 * Explore Openshift local cluster
@@ -3135,8 +3139,6 @@ c7$ oc cluster up  --base-dir=/openshift3  --public-hostname 192.168.122.95 --ro
 c7$ oc login -u system:admin
 c7$ oc adm policy add-cluster-role-to-user cluster-admin admin
 c7$ oc get nodes
-
-laptop$ browse https://192.168.122.95:8443/console
 ```
 
 * Test Openshit local cluster
@@ -3158,12 +3160,15 @@ NAME      HOST/PORT                                       PATH      SERVICES   P
 ruby-ex   ruby-ex-httpd-test.apps.192.168.122.95.nip.io             ruby-ex    8080-tcp                 None
  
 c7$ curl http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
-
-laptop$ vi /etc/hosts
-192.168.122.95 ruby-ex-httpd-test.apps.192.168.122.95.nip.io
-
-laptop$ browse http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 ```
+
+
+!!!
+* Katakoda:
+https://www.katacoda.com/openshift/courses/playgrounds/openshift311
+!!!
+
+
 
 <br><br><br>
 ## Openshift 3.11 CLI
