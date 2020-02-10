@@ -188,13 +188,11 @@ parameters:
 - name: PROJECT_DESCRIPTION
 - name: PROJECT_ADMIN_USER
 - name: PROJECT_REQUESTING_USER
-
-
-$ oc create -f /tmp/template.yaml -n default
 ```
 
-
-
+```bash
+$ oc create -f /tmp/template.yaml -n default
+```
 
 * Openshift quick upgrade verify.
 
