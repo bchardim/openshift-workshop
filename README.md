@@ -3173,10 +3173,10 @@ c7$ curl http://ruby-ex-ruby-ex.127.0.0.1.nip.io
 ```
 
 
-!!!
+<!--
 * Katakoda:
 https://www.katacoda.com/openshift/courses/playgrounds/openshift311
-!!!
+-->
 
 
 
