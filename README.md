@@ -3072,7 +3072,6 @@ Then install an Openshift 3.11 local cluster using 'oc cluster up' command as ex
 
 https://github.com/openshift/origin/blob/release-3.11/docs/cluster_up_down.md
 
-<!--
 ### Solution
 
 
@@ -3161,8 +3160,6 @@ laptop$ vi /etc/hosts
 
 laptop$ browse http://ruby-ex-httpd-test.apps.192.168.122.95.nip.io
 ```
-
--->
 
 <br><br><br>
 ## Openshift 3.11 CLI
