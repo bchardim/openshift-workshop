@@ -1281,6 +1281,7 @@ $ oc expose svc httpd
 $ oc get routes
 NAME      HOST/PORT                                        PATH      SERVICES   PORT       TERMINATION   WILDCARD
 httpd     httpd-persistent-storage-test.apps.info.net                httpd      8080-tcp                 None
+
 $ curl httpd-persistent-storage-test.apps.info.net
 Hello !!!
 
@@ -1942,7 +1943,6 @@ MySQL [(none)]> show databases;
 
 #### LAB: Do the same in your lab.
 
-Hint: in redis-pod.yaml change image location from 'image: registry.access.redhat.com/rhscl/redis-32-rhel7' to 'image: redis'.
 
 
 ### ConfigMap Objects
@@ -2104,6 +2104,8 @@ maxmemory-policy allkeys-lru
 ```
 
 #### LAB: Do the same in your lab.
+
+Hint: in redis-pod.yaml change image location from 'image: registry.access.redhat.com/rhscl/redis-32-rhel7' to 'image: redis'.
 
 
 ### Limiting Resource Usage
