@@ -3087,6 +3087,7 @@ c7$ yum -y upgrade
 c7$ yum -y install git docker vim wget
 c7$ systemctl start docker && systemctl enable docker 
 c7$ hostnamectl set-hostname localhost
+c7$ systemctl reboot
 ```
 
 * Configure Docker daemon 
