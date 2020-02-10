@@ -3133,6 +3133,7 @@ c7$ cp -f openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/kubectl /usr
 * Run Openshift local cluster
 
 ```bash
+c7$ cd 
 c7$ oc cluster up
 ```
 
