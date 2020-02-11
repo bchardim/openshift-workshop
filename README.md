@@ -3140,6 +3140,14 @@ c7$ cd /tmp && wget https://github.com/openshift/origin/releases/download/v3.11.
 c7$ cd /tmp && tar -xvzf openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit.tar.gz
 c7$ cp -f openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/oc /usr/bin/oc
 c7$ cp -f openshift-origin-client-tools-v3.11.0-0cbc58b-linux-64bit/kubectl /usr/bin/kubectl
+
+c7$ oc version
+oc v3.11.0+0cbc58b
+kubernetes v1.11.0+d4cacc0
+features: Basic-Auth GSSAPI Kerberos SPNEGO
+
+Server https://127.0.0.1:8443
+kubernetes v1.11.0+d4cacc0
 ```
 
 * Run Openshift local cluster
