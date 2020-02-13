@@ -1297,6 +1297,15 @@ Hints:
 
 1.- Configure NFS server in your lab:
 
+$ cat <<NFSEOF > /etc/exports
+/nfs/registry *(rw,root_squash,sync)
+/nfs/logging  *(rw,root_squash,sync)
+/nfs/metrics  *(rw,root_squash,sync)
+/nfs/pv01     *(rw,root_squash,sync)
+/nfs/pv02     *(rw,root_squash,sync)
+/nfs/pv03     *(rw,root_squash,sync)
+NFSEOF
+
 lab$ cat <<EOF >  /tmp/create_nfs.sh
 #!/bin/bash
 
@@ -1307,15 +1316,6 @@ systemctl start firewalld
 mkdir -p /nfs/{logging,metrics,registry,pv01,pv02,pv03}
 chown nfsnobody: /nfs/*
 chmod 777 /nfs/*
-
-cat <<NFSEOF > /etc/exports
-/nfs/registry *(rw,root_squash,sync)
-/nfs/logging  *(rw,root_squash,sync)
-/nfs/metrics  *(rw,root_squash,sync)
-/nfs/pv01     *(rw,root_squash,sync)
-/nfs/pv02     *(rw,root_squash,sync)
-/nfs/pv03     *(rw,root_squash,sync)
-NFSEOF
 
 firewall-cmd --permanent --add-service=nfs
 firewall-cmd --reload
@@ -2603,6 +2603,16 @@ grafana             grafana-openshift-monitoring.apps.info.net ... 1 more       
 prometheus-k8s      prometheus-k8s-openshift-monitoring.apps.info.net ... 1 more                prometheus-k8s      web       reencrypt     None
 ```
 
+### Creating custom graphics in Grafana
+
+
+https://grafana.com/docs/grafana/latest/guides/getting_started
+https://sysdig.com/blog/prometheus-metrics/
+
+
+Basic workflow: New Dashboard -> Create Graph -> Panel Title (edit) -> Data Source: prometheus -> Insert query
+
+
 
 
 <br><br><br>
@@ -3195,10 +3205,9 @@ c7$ curl http://ruby-ex-ruby-ex.127.0.0.1.nip.io
 ```
 
 
-<!--
-* Katakoda:
+* Also you can use Openshift 3,11 Katacoda Scenarios 
+
 https://www.katacoda.com/openshift/courses/playgrounds/openshift311
--->
 
 
 
