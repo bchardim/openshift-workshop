@@ -3207,8 +3207,7 @@ c7$ curl http://ruby-ex-ruby-ex.127.0.0.1.nip.io
 
 * Also you can use Openshift 3,11 Katacoda Scenarios 
 
-https://www.katacoda.com/openshift/courses/playgrounds/openshift311
-
+https://www.katacoda.com/openshift
 
 
 <br><br><br>
